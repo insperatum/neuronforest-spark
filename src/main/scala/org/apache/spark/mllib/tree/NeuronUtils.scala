@@ -13,19 +13,20 @@ import org.apache.spark.rdd.RDD
 import scala.io.Source
 
 object NeuronUtils {
+  def getSplitsAndBins(subvolumes: Array[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Array[(Int, Int, Int)]) = {
+    println("getting splits and bins")
+    val features_file_1 = data_root + "/" + subvolumes(0) + "/features.raw"
+    val features_data_1 = new RawFeatureData(features_file_1, nBaseFeatures)
+    getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, offsets.length)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
+  }
+
   def loadData(sc: SparkContext, subvolumes: Array[String], nBaseFeatures: Int, data_root: String,
-               maxBins:Int, offsets:Array[(Int, Int, Int)], proportion: Double, fromFront: Boolean) = {
-    //todo: use numFiles
+               maxBins:Int, offsets:Array[(Int, Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
     val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
       val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
       Seq(new RawFeatureData(features_file, nBaseFeatures)).toIterator
     })
     rawFeaturesData.cache()
-
-    val baseFeaturesRDD = rawFeaturesData.mapPartitions(_.next().toVectors)
-    println("getting splits and bins")
-    val (splits, bins) = getSplitsAndBins(baseFeaturesRDD, maxBins, nBaseFeatures, offsets.length)
-    println(" found bins!")
 
     val data = rawFeaturesData.mapPartitionsWithIndex((i, f) => {
       val startTime = System.currentTimeMillis()
@@ -71,19 +72,19 @@ object NeuronUtils {
       d
     })
     rawFeaturesData.unpersist()
-    (data, splits, bins)
+    data
   }
 
 
 
 
 
-  def getSplitsAndBins(featuress:RDD[org.apache.spark.mllib.linalg.Vector], maxBins:Int, nBaseFeatures:Int, nOffsets:Int):
+  private def getSplitsAndBinsFromFeaturess(featuress:Array[org.apache.spark.mllib.linalg.Vector], maxBins:Int, nBaseFeatures:Int, nOffsets:Int):
   (Array[Array[Split]], Array[Array[Bin]]) = {
     println("getSplitsAndBins")
     val strategy = new Strategy(Classification, Gini, 0, 0, maxBins, Sort, Map[Int, Int]())
-    val fakemetadata = MyDecisionTreeMetadata.buildMetadataFromFeatures(featuress, strategy, 50, "sqrt")
-    val (rawFeatureSplits, rawFeatureBins) = MyDecisionTree.findSplitsBins(featuress, fakemetadata) //todo: make it so I don't need to give this an RDD[Vector]
+    val fakemetadata = MyDecisionTreeMetadata.buildMetadata(featuress(0).size, featuress.size, strategy, 50, "sqrt")
+    val (rawFeatureSplits, rawFeatureBins) = MyDecisionTree.findSplitsBins(featuress, fakemetadata)
 
     val rawFeatureSplitsAndBins = rawFeatureSplits zip rawFeatureBins
     val featureSplitsAndBins = for(i <- (0 until nOffsets).toArray; sb <- rawFeatureSplitsAndBins) yield {

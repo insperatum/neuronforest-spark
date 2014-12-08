@@ -987,6 +987,13 @@ object MyDecisionTree extends Serializable with Logging {
       new Array[org.apache.spark.mllib.linalg.Vector](0)
     }
 
+    findSplitsBins(sampledFeaturess, metadata)
+  }
+
+  protected[tree] def findSplitsBins(sampledFeaturess: Array[org.apache.spark.mllib.linalg.Vector],
+                                     metadata: DecisionTreeMetadata): (Array[Array[Split]], Array[Array[Bin]]) = {
+    val numFeatures = metadata.numFeatures
+
     metadata.quantileStrategy match {
       case Sort =>
         val splits = new Array[Array[Split]](numFeatures)

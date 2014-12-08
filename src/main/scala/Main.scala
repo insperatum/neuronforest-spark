@@ -22,8 +22,8 @@ object Main {
 
 
     //-------------------------- Train -------------------------------------
-
-    val (train, splits, bins) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, fromFront = true)
+    val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
+    val train = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new Strategy(Classification, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
     val model = MyRandomForest.trainClassifierFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
@@ -32,9 +32,7 @@ object Main {
     println("trained.")
 
     //-------------------------- Test ---------------------------------------
-
-    val (test, _, _) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.8, fromFront = false)
-
+    val test = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.8, bins, fromFront = false)
     val labelsAndPredictions = test.map { point =>
       val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
       val prediction = model.predict(Vectors.dense(features))

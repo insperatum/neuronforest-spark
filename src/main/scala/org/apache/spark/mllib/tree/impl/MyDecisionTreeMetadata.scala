@@ -29,17 +29,6 @@ import org.apache.spark.rdd.RDD
 
 private[tree] object MyDecisionTreeMetadata extends Logging {
 
-
-  def buildMetadataFromFeatures(
-                                 input: RDD[org.apache.spark.mllib.linalg.Vector],
-                                 strategy: Strategy,
-                                 numTrees: Int,
-                                 featureSubsetStrategy: String): DecisionTreeMetadata = {
-    val numFeatures = input.take(1)(0).size
-    val numExamples = input.count()
-    buildMetadata(numFeatures, numExamples, strategy, numTrees, featureSubsetStrategy)
-  }
-
   /**
    * Construct a [[DecisionTreeMetadata]] instance for this dataset and parameters.
    * This computes which categorical features will be ordered vs. unordered,
