@@ -9,7 +9,7 @@ neuronforest-spark
 
 scp -i ~/luke.pem /home/luke/neuronforest-spark/out/artifacts/neuronforest.jar root@*INSTANCE-ADDRESS*.compute.amazonaws.com:
 
-ssh -i ~/luke.pem root@*INSTANCE-ADDRESS*.compute.amazonaws.com
+./spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 login *NAME*
 
 curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
 
@@ -21,4 +21,9 @@ unzip awscli-bundle.zip
 
 ./bin/aws s3 cp s3://neuronforest.sparkdata/data data --recursive
 
-./spark/bin/spark-submit --master spark://*local master address*:7077 --class Main ./neuronforest.jar data_root=/root/data/im1/split2 master=
+./spark/bin/spark-submit --master spark://*local master address*:7077 --class Main ./neuronforest.jar data_root=/root/data/im1/split_2 master=
+
+
+to stop:
+
+./spark-ec2 -i luke.pem --region eu-west-1 stop *NAME*
