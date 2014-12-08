@@ -28,35 +28,18 @@ object NeuronUtils {
     })
     rawFeaturesData.cache()
 
-    val data = rawFeaturesData.mapPartitionsWithIndex((i, f) => {
+    val dimensions = getDimensions(sc, data_root, subvolumes, proportion, fromFront)
+    val data = rawFeaturesData.zip(dimensions).mapPartitionsWithIndex((i, p) => {
       val startTime = System.currentTimeMillis()
 
-      val targets_file = data_root + "/" + subvolumes(i) + "/targets.txt"
-      val n_targets_total = Source.fromFile(targets_file).getLines().size //todo: store this at the top of the file (OR GET FROM DIMENSIONS!)
-      val n_targets = (n_targets_total * proportion).toInt
-      val target_index_offset = if (fromFront) 0 else n_targets_total - n_targets
-
-      val allTargets = Source.fromFile(targets_file).getLines().map(_.split(" ").map(_.toDouble))
-      val targets = if (fromFront)
-        allTargets.take(n_targets)
-      else
-        allTargets.drop(target_index_offset)
-
-      val dimensions_file = data_root + "/" + subvolumes(i) + "/dimensions.txt"
-      val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
-
-      val size = dimensions(0)
-      val step = (size(1) * size(2), size(2), 1)
-      val min_idx = (dimensions(1)(0), dimensions(1)(1), dimensions(1)(2))
-      val max_idx = (dimensions(2)(0), dimensions(2)(1), dimensions(2)(2))
-
-      println("Targets from " + min_idx + " to " + max_idx)
-
+      val (rawData, dimensions) = p.next()
+      import dimensions._
+      val targets = getTargets(data_root, subvolumes(i), n_targets, target_index_offset, proportion, fromFront)
 
       val seg_size = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
       val seg_step = (seg_size._2 * seg_size._3, seg_size._3, 1)
 
-      val binnedFeatureData = new BinnedFeatureData(f.next(), bins, seg_step, offsets)
+      val binnedFeatureData = new BinnedFeatureData(rawData, bins, seg_step, offsets)
       val d = targets.zipWithIndex.map { case (ts, i) =>
         val t = i + target_index_offset
         val y = ts(0)
@@ -64,7 +47,6 @@ object NeuronUtils {
           step._1 * (min_idx._1 + t / seg_step._1) +
             step._2 * (min_idx._2 + (t % seg_step._1) / seg_step._2) +
             (min_idx._3 + t % seg_step._2)
-        //LabeledPoint(y, Vectors.dense(binnedFeatureData.arr.slice(example_idx * nFeatures, (example_idx + 1) * nFeatures).map(_.toDouble)))
         new MyTreePoint(y, null, binnedFeatureData, example_idx)
       }
 
@@ -72,11 +54,48 @@ object NeuronUtils {
       d
     })
     rawFeaturesData.unpersist()
-    data
+    (data, dimensions.collect())
   }
 
 
 
+  case class Dimensions(step:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
+
+  private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Array[String], proportion:Double, fromFront:Boolean) = {
+    sc.parallelize(subvolumes, subvolumes.length).map(subvolume => {
+      val dimensions_file = data_root + "/" + subvolume + "/dimensions.txt"
+      val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
+
+      val size = dimensions(0)
+      val step = (size(1) * size(2), size(2), 1)
+      val min_idx_all = (dimensions(1)(0), dimensions(1)(1), dimensions(1)(2))
+      val max_idx_all = (dimensions(2)(0), dimensions(2)(1), dimensions(2)(2))
+
+      val min_idx = if(fromFront) min_idx_all
+        else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2, min_idx_all._3)
+
+      val max_idx = if(!fromFront) max_idx_all
+        else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2, max_idx_all._3)
+
+
+      val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
+      val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
+
+      println("From " + min_idx + " to " + max_idx)
+      Dimensions(step, min_idx, max_idx, n_targets, target_index_offset)
+    })
+  }
+
+
+  private def getTargets(data_root:String, subvolume: String, n_targets:Int, target_index_offset:Int, proportion:Double, fromFront:Boolean) = {
+    val targets_file = data_root + "/" + subvolume + "/targets.txt"
+    val allTargets = Source.fromFile(targets_file).getLines().map(_.split(" ").map(_.toDouble))
+    val targets = if (fromFront)
+      allTargets.take(n_targets)
+    else
+      allTargets.drop(target_index_offset)
+    targets
+  }
 
 
   private def getSplitsAndBinsFromFeaturess(featuress:Array[org.apache.spark.mllib.linalg.Vector], maxBins:Int, nBaseFeatures:Int, nOffsets:Int):
