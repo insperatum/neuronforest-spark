@@ -6,43 +6,44 @@ import org.apache.spark.mllib.tree.impurity.{Gini, Entropy, Impurity}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.Algo._
 
-object Main extends App{
+object Main {
 
-  //------------------------ Init ---------------------------------------
+  def main(args:Array[String]) {
+    //------------------------ Init ---------------------------------------
 
-  val s = getSettingsFromArgs(args)
-  println("Settings:\n" + s)
+    val s = getSettingsFromArgs(args)
+    println("Settings:\n" + s)
 
-  val offsets = for(x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
-  val nFeatures = s.nBaseFeatures * offsets.length
-  val conf = new SparkConf().setAppName("Hello")
-  if(! s.master.isEmpty) conf.setMaster(s.master)
-  val sc = new SparkContext(conf)
+    val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
+    val nFeatures = s.nBaseFeatures * offsets.length
+    val conf = new SparkConf().setAppName("Hello")
+    if (!s.master.isEmpty) conf.setMaster(s.master)
+    val sc = new SparkContext(conf)
 
 
-  //-------------------------- Train -------------------------------------
+    //-------------------------- Train -------------------------------------
 
-  val (train, splits, bins) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, fromFront = true)
-  //train.persist(StorageLevel.MEMORY_ONLY_SER)
-  val strategy = new Strategy(Classification, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
-  val model = MyRandomForest.trainClassifierFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
-    nFeatures, 400000, splits, bins)
+    val (train, splits, bins) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, fromFront = true)
+    //train.persist(StorageLevel.MEMORY_ONLY_SER)
+    val strategy = new Strategy(Classification, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
+    val model = MyRandomForest.trainClassifierFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
+      nFeatures, 400000, splits, bins)
 
-  println("trained.")
+    println("trained.")
 
-  //-------------------------- Test ---------------------------------------
+    //-------------------------- Test ---------------------------------------
 
-  val (test, _, _) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.8, fromFront = false)
+    val (test, _, _) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.8, fromFront = false)
 
-  val labelsAndPredictions = test.map { point =>
-    val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-    val prediction = model.predict(Vectors.dense(features))
-    (point.label, prediction)
+    val labelsAndPredictions = test.map { point =>
+      val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
+      val prediction = model.predict(Vectors.dense(features))
+      (point.label, prediction)
+    }
+    val testMSE = labelsAndPredictions.map { case (v, p) => math.pow(v - p, 2)}.mean()
+    println("Test Mean Squared Error = " + testMSE)
+    println("Learned regression tree model:\n" + model)
   }
-  val testMSE = labelsAndPredictions.map{ case(v, p) => math.pow(v - p, 2)}.mean()
-  println("Test Mean Squared Error = " + testMSE)
-  println("Learned regression tree model:\n" + model)
-
 
 
 
@@ -55,7 +56,10 @@ object Main extends App{
                          dimOffsets:Array[Int], master:String)
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
-    val m = args.map(_.split("=")).map(arr => arr(0) -> arr(1)).toMap
+    println("Called with args:")
+    args.foreach(println)
+
+    val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
     val impurityMap = Seq("entropy" -> Entropy, "gini" -> Gini).toMap
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "1000").toInt,
