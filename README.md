@@ -14,7 +14,7 @@ ssh -i ~/luke.pem root@*INSTANCE-ADDRESS*.compute.amazonaws.com
 curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
 
 unzip awscli-bundle.zip
-da
+
 ./awscli-bundle/install -b ~/aws
 
 *export aws credentials*
