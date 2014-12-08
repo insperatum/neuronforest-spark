@@ -1,5 +1,8 @@
 package org.apache.spark.mllib.tree
 
+import java.io
+import java.io.FileWriter
+
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.tree.configuration.Strategy
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
@@ -41,12 +44,11 @@ object NeuronUtils {
 
       val binnedFeatureData = new BinnedFeatureData(rawData, bins, seg_step, offsets)
       val d = targets.zipWithIndex.map { case (ts, i) =>
-        val t = i + target_index_offset
         val y = ts(0)
         val example_idx =
-          step._1 * (min_idx._1 + t / seg_step._1) +
-            step._2 * (min_idx._2 + (t % seg_step._1) / seg_step._2) +
-            (min_idx._3 + t % seg_step._2)
+          step._1 * (min_idx._1 + i / seg_step._1) +
+            step._2 * (min_idx._2 + (i % seg_step._1) / seg_step._2) +
+            (min_idx._3 + i % seg_step._2)
         new MyTreePoint(y, null, binnedFeatureData, example_idx)
       }
 
@@ -128,5 +130,30 @@ object NeuronUtils {
 
     println(" done...")
     (featureSplits, featureBins)
+  }
+
+
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double)], dimensions:Dimensions): Unit = {
+    println("Saving labels and predictions: " + path)
+    val dir =  new io.File(path)
+    if(!dir.exists) dir.mkdirs()
+
+    val fwdimensions = new FileWriter(path + "/dimensions.txt", false)
+    import dimensions.{min_idx, max_idx}
+    val dims = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
+    fwdimensions.write(dims._1 + " " + dims._2 + " " + dims._3)
+    fwdimensions.close()
+
+    val fwlabels = new FileWriter(path + "/labels.txt", false)
+    val fwpredictions = new FileWriter(path + "/predictions.txt", false)
+    labelsAndPredictions.foreach{ case (label, prediction) => {
+      fwlabels.write(label + "\n")
+      fwpredictions.write(prediction + "\n")
+    }}
+    fwlabels.close()
+    fwpredictions.close()
+
+    println("\tComplete")
+
   }
 }

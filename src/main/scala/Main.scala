@@ -1,3 +1,5 @@
+import java.io
+
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.{MyRandomForest, NeuronUtils}
 import org.apache.spark.mllib.tree.configuration.Strategy
@@ -21,9 +23,10 @@ object Main {
     val sc = new SparkContext(conf)
 
 
+
     //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, bins, fromFront = false)
+    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new Strategy(Classification, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
     val model = MyRandomForest.trainClassifierFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
@@ -37,7 +40,11 @@ object Main {
       val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
       val prediction = model.predict(Vectors.dense(features))
       (point.label, prediction)
-    }
+    }.cache()
+    labelsAndPredictions.mapPartitionsWithIndex( (i, p) => {
+      NeuronUtils.saveLabelsAndPredictions("/masters_predictions/" + i, p, dimensions_test(i))
+      Iterator(None)
+    }).take(1)
     val testMSE = labelsAndPredictions.map { case (v, p) => math.pow(v - p, 2)}.mean()
     println("Test Mean Squared Error = " + testMSE)
     println("Learned regression tree model:\n" + model)
