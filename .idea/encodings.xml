@@ -7,6 +7,7 @@
     <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyDecisionTreeMetadata.scala" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyNodeIdCache.scala" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/myTreeEnsembleModels.scala" charset="UTF-8" />
   </component>
 </project>
 

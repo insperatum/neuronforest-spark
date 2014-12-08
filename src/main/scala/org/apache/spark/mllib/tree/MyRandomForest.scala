@@ -124,7 +124,7 @@ private class MyRandomForest (
    * @param input Training data: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]]
    * @return a random forest model that can be used for prediction
    */
-  def run(input: RDD[LabeledPoint]): RandomForestModel = {
+  def run(input: RDD[LabeledPoint]): MyRandomForestModel = {
 
     val timer = new TimeTracker()
 
@@ -159,7 +159,7 @@ private class MyRandomForest (
   }
 
   def trainFromMyTreePoints(treeInput:RDD[MyTreePoint], timer:TimeTracker, metadata:DecisionTreeMetadata,
-                          splits:Array[Array[Split]], bins:Array[Array[Bin]]):RandomForestModel = {
+                          splits:Array[Array[Split]], bins:Array[Array[Bin]]):MyRandomForestModel = {
     val (subsample, withReplacement) = {
       // TODO: Have a stricter check for RF in the strategy
       val isRandomForest = numTrees > 1
@@ -259,7 +259,7 @@ private class MyRandomForest (
     }
 
     val trees = topNodes.map(topNode => new DecisionTreeModel(topNode, strategy.algo))
-    new RandomForestModel(strategy.algo, trees)
+    new MyRandomForestModel(strategy.algo, trees)
   }
 
 }
@@ -286,7 +286,7 @@ object MyRandomForest extends Serializable with Logging {
       strategy: Strategy,
       numTrees: Int,
       featureSubsetStrategy: String,
-      seed: Int): RandomForestModel = {
+      seed: Int): MyRandomForestModel = {
     require(strategy.algo == Classification,
       s"MyRandomForest.trainClassifier given Strategy with invalid algo: ${strategy.algo}")
     val rf = new MyRandomForest(strategy, numTrees, featureSubsetStrategy, seed)
@@ -303,7 +303,7 @@ object MyRandomForest extends Serializable with Logging {
                        numExamples: Long,
                        splits: Array[Array[Split]],
                        bins: Array[Array[Bin]]
-                       ): RandomForestModel = {
+                       ): MyRandomForestModel = {
     require(strategy.algo == Classification,
       s"MyRandomForest.trainClassifier given Strategy with invalid algo: ${strategy.algo}")
 
@@ -349,7 +349,7 @@ object MyRandomForest extends Serializable with Logging {
       impurity: String,
       maxDepth: Int,
       maxBins: Int,
-      seed: Int = Utils.random.nextInt()): RandomForestModel = {
+      seed: Int = Utils.random.nextInt()): MyRandomForestModel = {
     val impurityType = Impurities.fromString(impurity)
     val strategy = new Strategy(Classification, impurityType, maxDepth,
       numClasses, maxBins, Sort, categoricalFeaturesInfo)
@@ -368,7 +368,7 @@ object MyRandomForest extends Serializable with Logging {
       impurity: String,
       maxDepth: Int,
       maxBins: Int,
-      seed: Int): RandomForestModel = {
+      seed: Int): MyRandomForestModel = {
     trainClassifier(input.rdd, numClasses,
       categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
       numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed)
@@ -394,7 +394,7 @@ object MyRandomForest extends Serializable with Logging {
       strategy: Strategy,
       numTrees: Int,
       featureSubsetStrategy: String,
-      seed: Int): RandomForestModel = {
+      seed: Int): MyRandomForestModel = {
     require(strategy.algo == Regression,
       s"MyRandomForest.trainRegressor given Strategy with invalid algo: ${strategy.algo}")
     val rf = new MyRandomForest(strategy, numTrees, featureSubsetStrategy, seed)
@@ -433,7 +433,7 @@ object MyRandomForest extends Serializable with Logging {
       impurity: String,
       maxDepth: Int,
       maxBins: Int,
-      seed: Int = Utils.random.nextInt()): RandomForestModel = {
+      seed: Int = Utils.random.nextInt()): MyRandomForestModel = {
     val impurityType = Impurities.fromString(impurity)
     val strategy = new Strategy(Regression, impurityType, maxDepth,
       0, maxBins, Sort, categoricalFeaturesInfo)
@@ -451,7 +451,7 @@ object MyRandomForest extends Serializable with Logging {
       impurity: String,
       maxDepth: Int,
       maxBins: Int,
-      seed: Int): RandomForestModel = {
+      seed: Int): MyRandomForestModel = {
     trainRegressor(input.rdd,
       categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
       numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed)
