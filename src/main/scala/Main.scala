@@ -2,9 +2,9 @@ import java.io
 
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.{MyRandomForest, NeuronUtils}
-import org.apache.spark.mllib.tree.configuration.Strategy
+import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.mllib.tree.impurity.{Gini, Entropy, Impurity}
+import org.apache.spark.mllib.tree.impurity.{Gini, Entropy, MyImpurity, MyImpurities}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.Algo._
 
@@ -28,8 +28,8 @@ object Main {
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
     val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
-    val strategy = new Strategy(Classification, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
-    val model = MyRandomForest.trainClassifierFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
+    val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
+    val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
       nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
     println("trained.")
 
@@ -45,7 +45,7 @@ object Main {
       NeuronUtils.saveLabelsAndPredictions("/masters_predictions/" + i, p, dimensions_test(i))
       Iterator(None)
     }).take(1)
-    val testMSE = labelsAndPredictions.map { case (v, p) => math.pow(v - p, 2)}.mean()
+    val testMSE = labelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()
     println("Test Mean Squared Error = " + testMSE)
     println("Learned regression tree model:\n" + model)
   }
@@ -57,7 +57,7 @@ object Main {
   // -----------------------------------------------------------------------
 
   case class RunSettings(maxMemoryInMB:Int, data_root:String, subvolumes:Array[String], featureSubsetStrategy:String,
-                         impurity:Impurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
+                         impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
                          dimOffsets:Array[Int], master:String)
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
@@ -65,14 +65,13 @@ object Main {
     args.foreach(println)
 
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
-    val impurityMap = Seq("entropy" -> Entropy, "gini" -> Gini).toMap
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "1000").toInt,
       data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = m.getOrElse("subvolumes",    "000").split(",").toArray,
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
-      impurity      = impurityMap(m.getOrElse("impurity", "entropy")),
+      impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
       maxDepth      = m.getOrElse("maxDepth",      "14").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,

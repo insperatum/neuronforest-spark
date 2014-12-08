@@ -21,6 +21,7 @@ import com.github.fommil.netlib.BLAS.{getInstance => blas}
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.mllib.tree.Double3
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.EnsembleCombiningStrategy._
 import org.apache.spark.rdd.RDD
@@ -35,7 +36,7 @@ import scala.collection.mutable
  * @param trees tree ensembles
  */
 @Experimental
-class MyRandomForestModel(override val algo: Algo, override val trees: Array[DecisionTreeModel])
+class MyRandomForestModel(override val algo: Algo, override val trees: Array[MyDecisionTreeModel])
   extends MyTreeEnsembleModel(algo, trees, Array.fill(trees.size)(1.0),
     combiningStrategy = Average) {
 
@@ -53,7 +54,7 @@ class MyRandomForestModel(override val algo: Algo, override val trees: Array[Dec
 @Experimental
 class MyGradientBoostedTreesModel(
     override val algo: Algo,
-    override val trees: Array[DecisionTreeModel],
+    override val trees: Array[MyDecisionTreeModel],
     override val treeWeights: Array[Double])
   extends MyTreeEnsembleModel(algo, trees, treeWeights, combiningStrategy = Sum) {
 
@@ -70,7 +71,7 @@ class MyGradientBoostedTreesModel(
  */
 private[tree] sealed class MyTreeEnsembleModel(
     protected val algo: Algo,
-    protected val trees: Array[DecisionTreeModel],
+    protected val trees: Array[MyDecisionTreeModel],
     protected val treeWeights: Array[Double],
     protected val combiningStrategy: EnsembleCombiningStrategy) extends Serializable {
 
@@ -84,21 +85,24 @@ private[tree] sealed class MyTreeEnsembleModel(
    * @param features array representing a single data point
    * @return predicted category from the trained model
    */
-  private def predictBySumming(features: Vector): Double = {
+  private def predictBySumming(features: Vector): Double3 = {
     val treePredictions = trees.map(_.predict(features))
-    blas.ddot(numTrees, treePredictions, 1, treeWeights, 1)
+    //blas.ddot(numTrees, treePredictions, 1, treeWeights, 1)
+    treePredictions.zip(treeWeights).map {case (p, w) => p*w}.reduce(_+_)
   }
 
   /**
    * Classifies a single data point based on (weighted) majority votes.
    */
   private def predictByVoting(features: Vector): Double = {
+    ???
+    /*
     val votes = mutable.Map.empty[Int, Double]
     trees.view.zip(treeWeights).foreach { case (tree, weight) =>
       val prediction = tree.predict(features).toInt
       votes(prediction) = votes.getOrElse(prediction, 0.0) + weight
     }
-    votes.maxBy(_._2)._1
+    votes.maxBy(_._2)._1*/
   }
 
   /**
@@ -107,21 +111,19 @@ private[tree] sealed class MyTreeEnsembleModel(
    * @param features array representing a single data point
    * @return predicted category from the trained model
    */
-  def predict(features: Vector): Double = {
+  def predict(features: Vector): Double3 = {
     (algo, combiningStrategy) match {
       case (Regression, Sum) =>
         predictBySumming(features)
       case (Regression, Average) =>
         predictBySumming(features) / sumWeights
-      case (Classification, Sum) => // binary classification
+      /*case (Classification, Sum) => // binary classification
         val prediction = predictBySumming(features)
         // TODO: predicted labels are +1 or -1 for GBT. Need a better way to store this info.
         if (prediction > 0.0) 1.0 else 0.0
       case (Classification, Vote) =>
         predictByVoting(features)
-      case (Classification, Average) =>
-        predictBySumming(features) / sumWeights
-      case _ =>
+      */case _ =>
         throw new IllegalArgumentException(
           "MyTreeEnsembleModel given unsupported (algo, combiningStrategy) combination: " +
             s"($algo, $combiningStrategy).")
@@ -134,7 +136,7 @@ private[tree] sealed class MyTreeEnsembleModel(
    * @param features RDD representing data points to be predicted
    * @return RDD[Double] where each entry contains the corresponding prediction
    */
-  def predict(features: RDD[Vector]): RDD[Double] = features.map(x => predict(x))
+  def predict(features: RDD[Vector]): RDD[Double3] = features.map(x => predict(x))
 
   /**
    * Java-friendly version of [[org.apache.spark.mllib.tree.model.MyTreeEnsembleModel#predict]].

@@ -18,6 +18,7 @@
 package org.apache.spark.mllib.tree.impl
 
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.tree.Double3
 import org.apache.spark.mllib.tree.model.Bin
 import org.apache.spark.rdd.RDD
 
@@ -33,7 +34,7 @@ import org.apache.spark.rdd.RDD
  *      "Ordered categorical features" are categorical features with high arity,
  *      or any categorical feature used in regression or binary classification.
  */
-class MyTreePoint(val label: Double, val arr:Array[Int], val data:BinnedFeatureData = null, val idx:Int = 0)
+class MyTreePoint(val label: Double3, val arr:Array[Int], val data:BinnedFeatureData = null, val idx:Int = 0)
   extends Serializable {
   def binnedFeatures(f:Int) = {
     if(arr == null) data.getBin(idx, f) else arr(f)
@@ -55,7 +56,7 @@ private[tree] object MyTreePoint {
   def convertToTreeRDD(
       input: RDD[LabeledPoint],
       bins: Array[Array[Bin]],
-      metadata: DecisionTreeMetadata): RDD[MyTreePoint] = {
+      metadata: MyDecisionTreeMetadata): RDD[MyTreePoint] = {
     // Construct arrays for featureArity and isUnordered for efficiency in the inner loop.
     val featureArity: Array[Int] = new Array[Int](metadata.numFeatures)
     val isUnordered: Array[Boolean] = new Array[Boolean](metadata.numFeatures)
@@ -90,7 +91,8 @@ private[tree] object MyTreePoint {
         isUnordered(featureIndex), bins)
       featureIndex += 1
     }
-    new MyTreePoint(labeledPoint.label, arr)
+    //new MyTreePoint(labeledPoint.label, arr)
+    ???
   }
 
   /**

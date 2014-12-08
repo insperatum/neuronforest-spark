@@ -4,11 +4,11 @@ import java.io
 import java.io.FileWriter
 
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.tree.configuration.Strategy
+import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.impl.{MyDecisionTreeMetadata, BinnedFeatureData, MyTreePoint, RawFeatureData}
-import org.apache.spark.mllib.tree.impurity.Gini
+import org.apache.spark.mllib.tree.impurity.{MyVariance, Gini}
 import org.apache.spark.mllib.tree.model.{Bin, Split}
 
 import org.apache.spark.rdd.RDD
@@ -44,7 +44,7 @@ object NeuronUtils {
 
       val binnedFeatureData = new BinnedFeatureData(rawData, bins, seg_step, offsets)
       val d = targets.zipWithIndex.map { case (ts, i) =>
-        val y = ts(0)
+        val y = Double3(ts(0), ts(1), ts(2))
         val example_idx =
           step._1 * (min_idx._1 + i / seg_step._1) +
             step._2 * (min_idx._2 + (i % seg_step._1) / seg_step._2) +
@@ -103,7 +103,7 @@ object NeuronUtils {
   private def getSplitsAndBinsFromFeaturess(featuress:Array[org.apache.spark.mllib.linalg.Vector], maxBins:Int, nBaseFeatures:Int, nOffsets:Int):
   (Array[Array[Split]], Array[Array[Bin]]) = {
     println("getSplitsAndBins")
-    val strategy = new Strategy(Classification, Gini, 0, 0, maxBins, Sort, Map[Int, Int]())
+    val strategy = new MyStrategy(Classification, MyVariance, 0, 0, maxBins, Sort, Map[Int, Int]())
     val fakemetadata = MyDecisionTreeMetadata.buildMetadata(featuress(0).size, featuress.size, strategy, 50, "sqrt")
     val (rawFeatureSplits, rawFeatureBins) = MyDecisionTree.findSplitsBins(featuress, fakemetadata)
 
@@ -133,7 +133,7 @@ object NeuronUtils {
   }
 
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double)], dimensions:Dimensions): Unit = {
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
@@ -147,8 +147,8 @@ object NeuronUtils {
     val fwlabels = new FileWriter(path + "/labels.txt", false)
     val fwpredictions = new FileWriter(path + "/predictions.txt", false)
     labelsAndPredictions.foreach{ case (label, prediction) => {
-      fwlabels.write(label + "\n")
-      fwpredictions.write(prediction + "\n")
+      fwlabels.write(label._1 + " " + label._2 + " " + label._3 + "\n")
+      fwpredictions.write(prediction._1 + " " + prediction._2 + " " + prediction._3 + "\n")
     }}
     fwlabels.close()
     fwpredictions.close()

@@ -23,22 +23,89 @@ import org.apache.spark.Logging
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
-import org.apache.spark.mllib.tree.configuration.Strategy
-import org.apache.spark.mllib.tree.impurity.Impurity
+import org.apache.spark.mllib.tree.configuration.MyStrategy
+import org.apache.spark.mllib.tree.impurity.MyImpurity
 import org.apache.spark.rdd.RDD
+
+/**
+ * Learning and dataset metadata for DecisionTree.
+ *
+ * @param numClasses    For classification: labels can take values {0, ..., numClasses - 1}.
+ *                      For regression: fixed at 0 (no meaning).
+ * @param maxBins  Maximum number of bins, for all features.
+ * @param featureArity  Map: categorical feature index --> arity.
+ *                      I.e., the feature takes values in {0, ..., arity - 1}.
+ * @param numBins  Number of bins for each feature.
+ */
+private[tree] class MyDecisionTreeMetadata(
+                                          val numFeatures: Int,
+                                          val numExamples: Long,
+                                          val numClasses: Int,
+                                          val maxBins: Int,
+                                          val featureArity: Map[Int, Int],
+                                          val unorderedFeatures: Set[Int],
+                                          val numBins: Array[Int],
+                                          val impurity: MyImpurity,
+                                          val quantileStrategy: QuantileStrategy,
+                                          val maxDepth: Int,
+                                          val minInstancesPerNode: Int,
+                                          val minInfoGain: Double,
+                                          val numTrees: Int,
+                                          val numFeaturesPerNode: Int) extends Serializable {
+
+  def isUnordered(featureIndex: Int): Boolean = unorderedFeatures.contains(featureIndex)
+
+  def isClassification: Boolean = numClasses >= 2
+
+  def isMulticlass: Boolean = numClasses > 2
+
+  def isMulticlassWithCategoricalFeatures: Boolean = isMulticlass && (featureArity.size > 0)
+
+  def isCategorical(featureIndex: Int): Boolean = featureArity.contains(featureIndex)
+
+  def isContinuous(featureIndex: Int): Boolean = !featureArity.contains(featureIndex)
+
+  /**
+   * Number of splits for the given feature.
+   * For unordered features, there are 2 bins per split.
+   * For ordered features, there is 1 more bin than split.
+   */
+  def numSplits(featureIndex: Int): Int = if (isUnordered(featureIndex)) {
+    numBins(featureIndex) >> 1
+  } else {
+    numBins(featureIndex) - 1
+  }
+
+
+  /**
+   * Set number of splits for a continuous feature.
+   * For a continuous feature, number of bins is number of splits plus 1.
+   */
+  def setNumSplits(featureIndex: Int, numSplits: Int) {
+    require(isContinuous(featureIndex),
+      s"Only number of bin for a continuous feature can be set.")
+    numBins(featureIndex) = numSplits + 1
+  }
+
+  /**
+   * Indicates if feature subsampling is being used.
+   */
+  def subsamplingFeatures: Boolean = numFeatures != numFeaturesPerNode
+
+}
 
 private[tree] object MyDecisionTreeMetadata extends Logging {
 
   /**
-   * Construct a [[DecisionTreeMetadata]] instance for this dataset and parameters.
+   * Construct a [[MyDecisionTreeMetadata]] instance for this dataset and parameters.
    * This computes which categorical features will be ordered vs. unordered,
    * as well as the number of splits and bins for each feature.
    */
   def buildMetadata(
                      input: RDD[LabeledPoint],
-                     strategy: Strategy,
+                     strategy: MyStrategy,
                      numTrees: Int,
-                     featureSubsetStrategy: String): DecisionTreeMetadata = {
+                     featureSubsetStrategy: String): MyDecisionTreeMetadata = {
     val numFeatures = input.take(1)(0).features.size
     val numExamples = input.count()
     buildMetadata(numFeatures, numExamples, strategy, numTrees, featureSubsetStrategy)
@@ -47,9 +114,9 @@ private[tree] object MyDecisionTreeMetadata extends Logging {
   def buildMetadata(
                      numFeatures:Int,
                      numExamples:Long,
-                     strategy: Strategy,
+                     strategy: MyStrategy,
                      numTrees: Int,
-                     featureSubsetStrategy: String): DecisionTreeMetadata = {
+                     featureSubsetStrategy: String): MyDecisionTreeMetadata = {
     val numClasses = strategy.algo match {
       case Classification => strategy.numClasses
       case Regression => 0
@@ -62,7 +129,7 @@ private[tree] object MyDecisionTreeMetadata extends Logging {
     }
 
     // We check the number of bins here against maxPossibleBins.
-    // This needs to be checked here instead of in Strategy since maxPossibleBins can be modified
+    // This needs to be checked here instead of in MyStrategy since maxPossibleBins can be modified
     // based on the number of training examples.
     if (strategy.categoricalFeaturesInfo.nonEmpty) {
       val maxCategoriesPerFeature = strategy.categoricalFeaturesInfo.values.max
@@ -117,7 +184,7 @@ private[tree] object MyDecisionTreeMetadata extends Logging {
       case "onethird" => (numFeatures / 3.0).ceil.toInt
     }
 
-    new DecisionTreeMetadata(numFeatures, numExamples, numClasses, numBins.max,
+    new MyDecisionTreeMetadata(numFeatures, numExamples, numClasses, numBins.max,
       strategy.categoricalFeaturesInfo, unorderedFeatures.toSet, numBins,
       strategy.impurity, strategy.quantileCalculationStrategy, strategy.maxDepth,
       strategy.minInstancesPerNode, strategy.minInfoGain, numTrees, numFeaturesPerNode)
@@ -128,7 +195,7 @@ private[tree] object MyDecisionTreeMetadata extends Logging {
    */
   def buildMetadata(
                      input: RDD[LabeledPoint],
-                     strategy: Strategy): DecisionTreeMetadata = {
+                     strategy: MyStrategy): MyDecisionTreeMetadata = {
     buildMetadata(input, strategy, numTrees = 1, featureSubsetStrategy = "all")
   }
 
