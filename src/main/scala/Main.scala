@@ -1,8 +1,9 @@
 import java.io
 
 import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.tree.{MyRandomForest, NeuronUtils}
-import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
+import org.apache.spark.mllib.tree.loss.MalisLoss
+import org.apache.spark.mllib.tree.{MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
+import org.apache.spark.mllib.tree.configuration.{MyBoostingStrategy, MyStrategy, Strategy}
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.mllib.tree.impurity.{Gini, Entropy, MyImpurity, MyImpurities}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
@@ -29,8 +30,12 @@ object Main {
     val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
-    val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
-      nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+    //val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
+    //  nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 50, 0.1)
+
+    val model = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
+      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
     println("trained.")
 
 
@@ -49,9 +54,6 @@ object Main {
     println("Test Mean Squared Error = " + testMSE)
     println("Learned regression tree model:\n" + model)
   }
-
-
-
 
 
   // -----------------------------------------------------------------------

@@ -7,7 +7,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.Algo._
-import org.apache.spark.mllib.tree.impl.{MyDecisionTreeMetadata, BinnedFeatureData, MyTreePoint, RawFeatureData}
+import org.apache.spark.mllib.tree.impl.{MyDecisionTreeMetadata, MyTreePoint}
 import org.apache.spark.mllib.tree.impurity.{MyVariance, Gini}
 import org.apache.spark.mllib.tree.model.{Bin, Split}
 
@@ -42,14 +42,15 @@ object NeuronUtils {
       val seg_size = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
       val seg_step = (seg_size._2 * seg_size._3, seg_size._3, 1)
 
-      val binnedFeatureData = new BinnedFeatureData(rawData, bins, seg_step, offsets)
+      val binnedFeatureData = new BinnedFeatureData(rawData, bins, seg_size, offsets)
       val d = targets.zipWithIndex.map { case (ts, i) =>
         val y = Double3(ts(0), ts(1), ts(2))
+        val seg = ts(3).toInt
         val example_idx =
           step._1 * (min_idx._1 + i / seg_step._1) +
             step._2 * (min_idx._2 + (i % seg_step._1) / seg_step._2) +
             (min_idx._3 + i % seg_step._2)
-        new MyTreePoint(y, null, binnedFeatureData, example_idx)
+        new MyTreePoint(y, seg, binnedFeatureData, example_idx)
       }
 
       println("creating partition data took " + (System.currentTimeMillis() - startTime) + " ms")

@@ -17,14 +17,15 @@
 
 package org.apache.spark.mllib.tree.impl
 
-import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.mllib.tree.Double3
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression.MyLabeledPoint
+import org.apache.spark.mllib.tree.{BinnedFeatureData, Double3}
 import org.apache.spark.mllib.tree.model.Bin
 import org.apache.spark.rdd.RDD
 
 
 /**
- * Internal representation of LabeledPoint for DecisionTree.
+ * Internal representation of MyLabeledPoint for DecisionTree.
  * This bins feature values based on a subsampled of data as follows:
  *  (a) Continuous features are binned into ranges.
  *  (b) Unordered categorical features are binned based on subsets of feature values.
@@ -34,12 +35,13 @@ import org.apache.spark.rdd.RDD
  *      "Ordered categorical features" are categorical features with high arity,
  *      or any categorical feature used in regression or binary classification.
  */
-class MyTreePoint(val label: Double3, val arr:Array[Int], val data:BinnedFeatureData = null, val idx:Int = 0)
+case class MyTreePoint(label: Double3, seg:Int, data:BinnedFeatureData, idx:Int)
   extends Serializable {
   def binnedFeatures(f:Int) = {
-    if(arr == null) data.getBin(idx, f) else arr(f)
+    data.getBin(idx, f)
   }
   def features(f:Int) = data.getValue(idx, f)
+  def getFeatureVector = Vectors.dense(Array.tabulate[Double](data.nFeatures)(features))
 }
 
 
@@ -54,7 +56,7 @@ private[tree] object MyTreePoint {
    * @return  MyTreePoint dataset representation
    */
   def convertToTreeRDD(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       bins: Array[Array[Bin]],
       metadata: MyDecisionTreeMetadata): RDD[MyTreePoint] = {
     // Construct arrays for featureArity and isUnordered for efficiency in the inner loop.
@@ -72,14 +74,14 @@ private[tree] object MyTreePoint {
   }
 
   /**
-   * Convert one LabeledPoint into its MyTreePoint representation.
+   * Convert one MyLabeledPoint into its MyTreePoint representation.
    * @param bins      Bins for features, of size (numFeatures, numBins).
    * @param featureArity  Array indexed by feature, with value 0 for continuous and numCategories
    *                      for categorical features.
    * @param isUnordered  Array index by feature, with value true for unordered categorical features.
    */
   private def labeledPointToTreePoint(
-      labeledPoint: LabeledPoint,
+      labeledPoint: MyLabeledPoint,
       bins: Array[Array[Bin]],
       featureArity: Array[Int],
       isUnordered: Array[Boolean]): MyTreePoint = {
@@ -104,7 +106,7 @@ private[tree] object MyTreePoint {
    */
   private[tree] def findBin(
       featureIndex: Int,
-      input: LabeledPoint,
+      input: MyLabeledPoint,
       featureArity: Int,
       isUnorderedFeature: Boolean,
       bins: Array[Array[Bin]]): Int = {

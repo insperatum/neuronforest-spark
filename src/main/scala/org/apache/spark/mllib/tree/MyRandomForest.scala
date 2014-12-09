@@ -20,7 +20,7 @@ package org.apache.spark.mllib.tree
 import org.apache.spark.Logging
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.regression.MyLabeledPoint
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.MyStrategy
@@ -121,10 +121,10 @@ private class MyRandomForest (
 
   /**
    * Method to train a decision tree model over an RDD
-   * @param input Training data: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]]
+   * @param input Training data: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]]
    * @return a random forest model that can be used for prediction
    */
-  def run(input: RDD[LabeledPoint]): MyRandomForestModel = {
+  def run(input: RDD[MyLabeledPoint]): MyRandomForestModel = {
 
     val timer = new TimeTracker()
 
@@ -132,7 +132,7 @@ private class MyRandomForest (
 
     timer.start("init")
 
-    val retaggedInput = input.retag(classOf[LabeledPoint])
+    val retaggedInput = input.retag(classOf[MyLabeledPoint])
     val metadata =
       MyDecisionTreeMetadata.buildMetadata(retaggedInput, strategy, numTrees, featureSubsetStrategy)
     logDebug("algo = " + strategy.algo)
@@ -172,7 +172,7 @@ private class MyRandomForest (
 
     val baggedInput
       = BaggedPoint.convertToBaggedRDD(treeInput, subsample, numTrees, withReplacement, seed)
-        //.persist(StorageLevel.MEMORY_AND_DISK)
+        //.persist(StorageLevel.MEMORY_AND_DISK) todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
 
     // depth of the decision tree
     val maxDepth = strategy.maxDepth
@@ -269,7 +269,7 @@ object MyRandomForest extends Serializable with Logging {
   /**
    * Method to train a decision tree model for binary or multiclass classification.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              Labels should take values {0, 1, ..., numClasses-1}.
    * @param strategy Parameters for training each tree in the forest.
    * @param numTrees Number of trees in the random forest.
@@ -282,7 +282,7 @@ object MyRandomForest extends Serializable with Logging {
    * @return a random forest model that can be used for prediction
    */
   def trainClassifier(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       strategy: MyStrategy,
       numTrees: Int,
       featureSubsetStrategy: String,
@@ -318,7 +318,7 @@ object MyRandomForest extends Serializable with Logging {
   /**
    * Method to train a decision tree model for binary or multiclass classification.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              Labels should take values {0, 1, ..., numClasses-1}.
    * @param numClasses number of classes for classification.
    * @param categoricalFeaturesInfo Map storing arity of categorical features.
@@ -341,7 +341,7 @@ object MyRandomForest extends Serializable with Logging {
    * @return a random forest model  that can be used for prediction
    */
   def trainClassifier(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       numClasses: Int,
       categoricalFeaturesInfo: Map[Int, Int],
       numTrees: Int,
@@ -360,7 +360,7 @@ object MyRandomForest extends Serializable with Logging {
    * Java-friendly API for [[org.apache.spark.mllib.tree.MyRandomForest#trainClassifier]]
    */
   def trainClassifier(
-      input: JavaRDD[LabeledPoint],
+      input: JavaRDD[MyLabeledPoint],
       numClasses: Int,
       categoricalFeaturesInfo: java.util.Map[java.lang.Integer, java.lang.Integer],
       numTrees: Int,
@@ -377,7 +377,7 @@ object MyRandomForest extends Serializable with Logging {
   /**
    * Method to train a decision tree model for regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              Labels are real numbers.
    * @param strategy Parameters for training each tree in the forest.
    * @param numTrees Number of trees in the random forest.
@@ -390,7 +390,7 @@ object MyRandomForest extends Serializable with Logging {
    * @return a random forest model that can be used for prediction
    */
   def trainRegressor(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       strategy: MyStrategy,
       numTrees: Int,
       featureSubsetStrategy: String,
@@ -404,7 +404,7 @@ object MyRandomForest extends Serializable with Logging {
   /**
    * Method to train a decision tree model for regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              Labels are real numbers.
    * @param categoricalFeaturesInfo Map storing arity of categorical features.
    *                                E.g., an entry (n -> k) indicates that feature n is categorical
@@ -426,7 +426,7 @@ object MyRandomForest extends Serializable with Logging {
    * @return a random forest model that can be used for prediction
    */
   def trainRegressor(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       categoricalFeaturesInfo: Map[Int, Int],
       numTrees: Int,
       featureSubsetStrategy: String,
@@ -444,7 +444,7 @@ object MyRandomForest extends Serializable with Logging {
    * Java-friendly API for [[org.apache.spark.mllib.tree.MyRandomForest#trainRegressor]]
    */
   def trainRegressor(
-      input: JavaRDD[LabeledPoint],
+      input: JavaRDD[MyLabeledPoint],
       categoricalFeaturesInfo: java.util.Map[java.lang.Integer, java.lang.Integer],
       numTrees: Int,
       featureSubsetStrategy: String,

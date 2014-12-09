@@ -30,13 +30,14 @@ def makeFeatures(img, filename, min_idx=None, max_idx=None):
     #np.savetxt(filename + ".txt", features, fmt='%.6f')
     #io.savemat(filename + ".mat", {'features':features})
 
-def makeTargets(segTrue, filename, min_idx, max_idx):
-    print("Creating targets: " + filename)
+def makeTargetsAndSeg(segTrue, filename, min_idx, max_idx):
+    print("Creating targets and seg: " + filename)
     print(str(min_idx) + " to " + str(max_idx))
     idxs = get_image_idxs(segTrue, min_idx=min_idx, max_idx=max_idx)
     targets = get_target_affinities(segTrue, idxs).astype(np.int32)
+    out = np.concatenate((targets, segTrue[tuple(idxs)][:, np.newaxis]), axis=1)
     print("  Saving")
-    np.savetxt(filename + ".txt", targets, fmt='%d')
+    np.savetxt(filename + ".txt", out, fmt='%d')
 
 def makeDimensions(shape, filename, min_idx, max_idx):
     print("Creating dimensions: " + filename)
@@ -73,7 +74,7 @@ def makeData(numSplit=1, margin=15, numImages=1):
     Helmstaedter2013 = io.loadmat("/masters_data/Helmstaedter.mat")
     if not os.path.exists("data"): os.mkdir("data")
     for i in range(0, numImages):
-        print("Splitting im" + str(i+1)+ " into " + str(numSplit) + "^3 different subvolumes".format())
+        print("\nSplitting im" + str(i+1)+ " into " + str(numSplit) + "^3 different subvolumes".format())
         bounds = Helmstaedter2013["boundingBox"][0, i]
         outer_min_idx = np.maximum(bounds[:, 0], margin)
         outer_max_idx = np.minimum(bounds[:, 1]-1, np.array(Helmstaedter2013["im"][0,i].shape) - margin-1) # -1 because no affinity on faces
@@ -99,8 +100,8 @@ def makeData(numSplit=1, margin=15, numImages=1):
                     shape = box_max_margin - box_min_margin + 1
 
                     if not os.path.exists(folder): os.mkdir(folder)
-                    makeTargets(Helmstaedter2013["segTrue"][0, i], folder + "/targets", box_min, box_max)
+                    makeTargetsAndSeg(Helmstaedter2013["segTrue"][0, i], folder + "/targets", box_min, box_max)
                     makeFeatures(Helmstaedter2013["im"][0, i], folder + "/features", box_min_margin, box_max_margin)
                     makeDimensions(shape, folder + "/dimensions",  box_min_relative, box_max_relative)
 
-makeData(numSplit=1, numImages=12)
+makeData(numSplit=2, numImages=12)

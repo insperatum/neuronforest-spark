@@ -20,7 +20,7 @@ package org.apache.spark.mllib.tree
 import org.apache.spark.Logging
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.regression.MyLabeledPoint
 import org.apache.spark.mllib.tree.MyRandomForest.NodeIndexInfo
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.FeatureType._
@@ -52,13 +52,16 @@ class MyDecisionTree (private val strategy: MyStrategy) extends Serializable wit
 
   /**
    * Method to train a decision tree model over an RDD
-   * @param input Training data: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]]
+   * @param input Training data: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]]
    * @return MyDecisionTreeModel that can be used for prediction
    */
-  def run(input: RDD[LabeledPoint]): MyDecisionTreeModel = {
+  def run(input: RDD[MyTreePoint], numFeatures:Int, numExamples:Int, splits:Array[Array[Split]], bins:Array[Array[Bin]], featureSubsetStrategy:String = "all"): MyDecisionTreeModel = {
     // Note: random seed will not be used since numTrees = 1.
-    val rf = new MyRandomForest(strategy, numTrees = 1, featureSubsetStrategy = "all", seed = 0)
-    val rfModel = rf.run(input)
+    //val rf = new MyRandomForest(strategy, numTrees = 1, featureSubsetStrategy = "all", seed = 0)
+    //val rfModel = rf.run(input)
+    val rfModel = MyRandomForest.trainRegressorFromTreePoints(
+              input, strategy, numTrees=1, featureSubsetStrategy,
+              seed=1, numFeatures, numExamples, splits, bins)
     rfModel.trees(0)
   }
 
@@ -67,7 +70,7 @@ class MyDecisionTree (private val strategy: MyStrategy) extends Serializable wit
    * methods with the same name in Java.
    */
   @deprecated("Please use MyDecisionTree.run instead.", "1.2.0")
-  def train(input: RDD[LabeledPoint]): MyDecisionTreeModel = run(input)
+  def train(input: RDD[MyLabeledPoint]): MyDecisionTreeModel = ??? //run(input)
 }
 
 object MyDecisionTree extends Serializable with Logging {
@@ -80,7 +83,7 @@ object MyDecisionTree extends Serializable with Logging {
    *       and [[org.apache.spark.mllib.tree.MyDecisionTree#trainRegressor]]
    *       is recommended to clearly separate classification and regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              For classification, labels should take values {0, 1, ..., numClasses-1}.
    *              For regression, labels are real numbers.
    * @param strategy The configuration parameters for the tree algorithm which specify the type
@@ -88,8 +91,8 @@ object MyDecisionTree extends Serializable with Logging {
    *                 categorical), depth of the tree, quantile calculation strategy, etc.
    * @return MyDecisionTreeModel that can be used for prediction
   */
-  def train(input: RDD[LabeledPoint], strategy: MyStrategy): MyDecisionTreeModel = {
-    new MyDecisionTree(strategy).run(input)
+  def train(input: RDD[MyLabeledPoint], strategy: MyStrategy): MyDecisionTreeModel = {
+    ??? //new MyDecisionTree(strategy).run(input)
   }
 
   /**
@@ -100,7 +103,7 @@ object MyDecisionTree extends Serializable with Logging {
    *       and [[org.apache.spark.mllib.tree.MyDecisionTree#trainRegressor]]
    *       is recommended to clearly separate classification and regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              For classification, labels should take values {0, 1, ..., numClasses-1}.
    *              For regression, labels are real numbers.
    * @param algo algorithm, classification or regression
@@ -110,12 +113,13 @@ object MyDecisionTree extends Serializable with Logging {
    * @return MyDecisionTreeModel that can be used for prediction
    */
   def train(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       algo: Algo,
       impurity: MyImpurity,
       maxDepth: Int): MyDecisionTreeModel = {
-    val strategy = new MyStrategy(algo, impurity, maxDepth)
-    new MyDecisionTree(strategy).run(input)
+    ???
+//    val strategy = new MyStrategy(algo, impurity, maxDepth)
+//    new MyDecisionTree(strategy).run(input)
   }
 
   /**
@@ -126,7 +130,7 @@ object MyDecisionTree extends Serializable with Logging {
    *       and [[org.apache.spark.mllib.tree.MyDecisionTree#trainRegressor]]
    *       is recommended to clearly separate classification and regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              For classification, labels should take values {0, 1, ..., numClasses-1}.
    *              For regression, labels are real numbers.
    * @param algo algorithm, classification or regression
@@ -137,13 +141,14 @@ object MyDecisionTree extends Serializable with Logging {
    * @return MyDecisionTreeModel that can be used for prediction
    */
   def train(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       algo: Algo,
       impurity: MyImpurity,
       maxDepth: Int,
       numClasses: Int): MyDecisionTreeModel = {
-    val strategy = new MyStrategy(algo, impurity, maxDepth, numClasses)
-    new MyDecisionTree(strategy).run(input)
+    ???
+//    val strategy = new MyStrategy(algo, impurity, maxDepth, numClasses)
+//    new MyDecisionTree(strategy).run(input)
   }
 
   /**
@@ -154,7 +159,7 @@ object MyDecisionTree extends Serializable with Logging {
    *       and [[org.apache.spark.mllib.tree.MyDecisionTree#trainRegressor]]
    *       is recommended to clearly separate classification and regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              For classification, labels should take values {0, 1, ..., numClasses-1}.
    *              For regression, labels are real numbers.
    * @param algo classification or regression
@@ -170,7 +175,7 @@ object MyDecisionTree extends Serializable with Logging {
    * @return MyDecisionTreeModel that can be used for prediction
    */
   def train(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       algo: Algo,
       impurity: MyImpurity,
       maxDepth: Int,
@@ -178,15 +183,16 @@ object MyDecisionTree extends Serializable with Logging {
       maxBins: Int,
       quantileCalculationStrategy: QuantileStrategy,
       categoricalFeaturesInfo: Map[Int,Int]): MyDecisionTreeModel = {
-    val strategy = new MyStrategy(algo, impurity, maxDepth, numClasses, maxBins,
-      quantileCalculationStrategy, categoricalFeaturesInfo)
-    new MyDecisionTree(strategy).run(input)
+    ???
+//    val strategy = new MyStrategy(algo, impurity, maxDepth, numClasses, maxBins,
+//      quantileCalculationStrategy, categoricalFeaturesInfo)
+//    new MyDecisionTree(strategy).run(input)
   }
 
   /**
    * Method to train a decision tree model for binary or multiclass classification.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              Labels should take values {0, 1, ..., numClasses-1}.
    * @param numClasses number of classes for classification.
    * @param categoricalFeaturesInfo Map storing arity of categorical features.
@@ -202,36 +208,38 @@ object MyDecisionTree extends Serializable with Logging {
    * @return MyDecisionTreeModel that can be used for prediction
    */
   def trainClassifier(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       numClasses: Int,
       categoricalFeaturesInfo: Map[Int, Int],
       impurity: String,
       maxDepth: Int,
       maxBins: Int): MyDecisionTreeModel = {
-    val impurityType = MyImpurities.fromString(impurity)
-    train(input, Classification, impurityType, maxDepth, numClasses, maxBins, Sort,
-      categoricalFeaturesInfo)
+    ???
+//    val impurityType = MyImpurities.fromString(impurity)
+//    train(input, Classification, impurityType, maxDepth, numClasses, maxBins, Sort,
+//      categoricalFeaturesInfo)
   }
 
   /**
    * Java-friendly API for [[org.apache.spark.mllib.tree.MyDecisionTree#trainClassifier]]
    */
   def trainClassifier(
-      input: JavaRDD[LabeledPoint],
+      input: JavaRDD[MyLabeledPoint],
       numClasses: Int,
       categoricalFeaturesInfo: java.util.Map[java.lang.Integer, java.lang.Integer],
       impurity: String,
       maxDepth: Int,
       maxBins: Int): MyDecisionTreeModel = {
-    trainClassifier(input.rdd, numClasses,
-      categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
-      impurity, maxDepth, maxBins)
+    ???
+//    trainClassifier(input.rdd, numClasses,
+//      categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
+//      impurity, maxDepth, maxBins)
   }
 
   /**
    * Method to train a decision tree model for regression.
    *
-   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]].
+   * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    *              Labels are real numbers.
    * @param categoricalFeaturesInfo Map storing arity of categorical features.
    *                                E.g., an entry (n -> k) indicates that feature n is categorical
@@ -246,27 +254,29 @@ object MyDecisionTree extends Serializable with Logging {
    * @return MyDecisionTreeModel that can be used for prediction
    */
   def trainRegressor(
-      input: RDD[LabeledPoint],
+      input: RDD[MyLabeledPoint],
       categoricalFeaturesInfo: Map[Int, Int],
       impurity: String,
       maxDepth: Int,
       maxBins: Int): MyDecisionTreeModel = {
-    val impurityType = MyImpurities.fromString(impurity)
-    train(input, Regression, impurityType, maxDepth, 0, maxBins, Sort, categoricalFeaturesInfo)
+    ???
+//    val impurityType = MyImpurities.fromString(impurity)
+//    train(input, Regression, impurityType, maxDepth, 0, maxBins, Sort, categoricalFeaturesInfo)
   }
 
   /**
    * Java-friendly API for [[org.apache.spark.mllib.tree.MyDecisionTree#trainRegressor]]
    */
   def trainRegressor(
-      input: JavaRDD[LabeledPoint],
+      input: JavaRDD[MyLabeledPoint],
       categoricalFeaturesInfo: java.util.Map[java.lang.Integer, java.lang.Integer],
       impurity: String,
       maxDepth: Int,
       maxBins: Int): MyDecisionTreeModel = {
-    trainRegressor(input.rdd,
-      categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
-      impurity, maxDepth, maxBins)
+    ???
+//    trainRegressor(input.rdd,
+//      categoricalFeaturesInfo.asInstanceOf[java.util.Map[Int, Int]].asScala.toMap,
+//      impurity, maxDepth, maxBins)
   }
 
   /**
@@ -955,7 +965,7 @@ object MyDecisionTree extends Serializable with Logging {
    *       and for multiclass classification with a high-arity feature,
    *       there is one bin per category.
    *
-   * //@param input Training data: RDD of [[org.apache.spark.mllib.regression.LabeledPoint]]
+   * //@param input Training data: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]]
    * @param metadata Learning and dataset metadata
    * @return A tuple of (splits, bins).
    *         Splits is an Array of [[org.apache.spark.mllib.tree.model.Split]]

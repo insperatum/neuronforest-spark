@@ -1,10 +1,11 @@
-package org.apache.spark.mllib.tree.impl
+package org.apache.spark.mllib.tree
 
 import java.io.RandomAccessFile
-import java.nio.{FloatBuffer, ByteBuffer}
+import java.nio.{ByteBuffer, FloatBuffer}
 
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.model.Bin
+import org.apache.spark.mllib.tree.impl.MyTreePoint
 
 trait FeatureData {
   def getValue(i:Int, f:Int):Double
@@ -49,8 +50,11 @@ class RawFeatureData(file:String, val nFeatures:Int) extends FeatureData with Se
 
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
-                        step:(Int, Int, Int),
+                        val dimensions:(Int, Int, Int),
                         offsets:Seq[(Int, Int, Int)]) {
+
+  val step = (dimensions._2 * dimensions._3, dimensions._3, 1)
+
   val arr = featureData.arr
   val binnedBaseFeatures = Array.ofDim[Int](arr.length)
   val nBaseFeatures = featureData.nFeatures
