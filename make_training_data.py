@@ -7,7 +7,7 @@ import h5py
 def makeFeatures(img, filename, min_idx=None, max_idx=None):
     if min_idx is None:
         min_idx = (0, 0, 0)
-        max_idx = img.shape
+        max_idx = tuple(np.array(img.shape)-1)
 
     orders = [[0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0], [0, 0, 2], [0, 1, 1], [1, 0, 1], [0, 2, 0], [1, 1, 0], [2, 0, 0]]
     scales = [1, 2, 4]
@@ -68,15 +68,15 @@ def get_target_affinities(seg, idxs):
 
 # --------------------------------------------------
 
-def makeData(numSplit=1, margin=10, numImages=1):
+def makeData(numSplit=1, margin=15, numImages=1):
     print "Loading Helmstaedter2013 data"
     Helmstaedter2013 = io.loadmat("/masters_data/Helmstaedter.mat")
     if not os.path.exists("data"): os.mkdir("data")
     for i in range(0, numImages):
-        print("Splitting im" + str(i)+ " into " + str(numSplit) + "^3 different subvolumes".format())
+        print("Splitting im" + str(i+1)+ " into " + str(numSplit) + "^3 different subvolumes".format())
         bounds = Helmstaedter2013["boundingBox"][0, i]
-        outer_min_idx = bounds[:, 0]
-        outer_max_idx = bounds[:, 1]-1 # -1 because no affinity on faces
+        outer_min_idx = np.maximum(bounds[:, 0], margin)
+        outer_max_idx = np.minimum(bounds[:, 1]-1, np.array(Helmstaedter2013["im"][0,i].shape) - margin-1) # -1 because no affinity on faces
         box_size = (outer_max_idx - outer_min_idx + 1)/numSplit
         mainfolder = "/masters_data/spark/im" + str(i+1)
         if not os.path.exists(mainfolder ): os.mkdir(mainfolder )
@@ -103,4 +103,4 @@ def makeData(numSplit=1, margin=10, numImages=1):
                     makeFeatures(Helmstaedter2013["im"][0, i], folder + "/features", box_min_margin, box_max_margin)
                     makeDimensions(shape, folder + "/dimensions",  box_min_relative, box_max_relative)
 
-makeData(1)
+makeData(numSplit=1, numImages=12)
