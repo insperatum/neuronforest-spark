@@ -70,7 +70,7 @@ def get_target_affinities(seg, idxs):
 
 def makeData(numSplit=1, margin=10, numImages=1):
     print "Loading Helmstaedter2013 data"
-    Helmstaedter2013 = io.loadmat("/home/luke/data/Helmstaedter_etal_Nature_2013_e2006_TrainingData_all.mat")
+    Helmstaedter2013 = io.loadmat("/masters_data/Helmstaedter.mat")
     if not os.path.exists("data"): os.mkdir("data")
     for i in range(0, numImages):
         print("Splitting im" + str(i)+ " into " + str(numSplit) + "^3 different subvolumes".format())
@@ -78,7 +78,7 @@ def makeData(numSplit=1, margin=10, numImages=1):
         outer_min_idx = bounds[:, 0]
         outer_max_idx = bounds[:, 1]-1 # -1 because no affinity on faces
         box_size = (outer_max_idx - outer_min_idx + 1)/numSplit
-        mainfolder = "data/im" + str(i+1)
+        mainfolder = "/masters_data/spark/im" + str(i+1)
         if not os.path.exists(mainfolder ): os.mkdir(mainfolder )
         mainfolder  = mainfolder  + "/split_" + str(numSplit)
         if not os.path.exists(mainfolder ): os.mkdir(mainfolder )
@@ -103,4 +103,4 @@ def makeData(numSplit=1, margin=10, numImages=1):
                     makeFeatures(Helmstaedter2013["im"][0, i], folder + "/features", box_min_margin, box_max_margin)
                     makeDimensions(shape, folder + "/dimensions",  box_min_relative, box_max_relative)
 
-makeData(2)
+makeData(1)
