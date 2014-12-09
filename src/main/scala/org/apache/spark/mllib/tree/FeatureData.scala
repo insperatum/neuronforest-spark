@@ -35,7 +35,6 @@ class RawFeatureData(file:String, val nFeatures:Int) extends FeatureData with Se
       bytesRead = fileChannel.read(byteBuffer)
     }
 
-    println("\tComplete")
     outFloatBuffer.array()
   }
 

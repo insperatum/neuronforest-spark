@@ -36,20 +36,22 @@ object NeuronUtils {
       val startTime = System.currentTimeMillis()
 
       val (rawData, dimensions) = p.next()
-      import dimensions._
-      val targets = getTargets(data_root, subvolumes(i), n_targets, target_index_offset, proportion, fromFront)
 
-      val seg_size = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
-      val seg_step = (seg_size._2 * seg_size._3, seg_size._3, 1)
+      val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
 
-      val binnedFeatureData = new BinnedFeatureData(rawData, bins, seg_size, offsets)
-      val d = targets.zipWithIndex.map { case (ts, i) =>
+      val indexer = new Indexer3D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
+//      val seg_size = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
+//      val seg_step = (seg_size._2 * seg_size._3, seg_size._3, 1)
+
+      val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer.innerDimensions, offsets)
+      val d = targets.zipWithIndex.map { case (ts, idx) =>
         val y = Double3(ts(0), ts(1), ts(2))
         val seg = ts(3).toInt
-        val example_idx =
-          step._1 * (min_idx._1 + i / seg_step._1) +
-            step._2 * (min_idx._2 + (i % seg_step._1) / seg_step._2) +
-            (min_idx._3 + i % seg_step._2)
+        val example_idx = indexer.innerToOuter(idx)
+//        val example_idx =
+//          step._1 * (min_idx._1 + idx / seg_step._1) +
+//            step._2 * (min_idx._2 + (idx % seg_step._1) / seg_step._2) +
+//            (min_idx._3 + idx % seg_step._2)
         new MyTreePoint(y, seg, binnedFeatureData, example_idx)
       }
 
@@ -62,15 +64,16 @@ object NeuronUtils {
 
 
 
-  case class Dimensions(step:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
+  case class Dimensions(outerDimensions:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
 
   private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Array[String], proportion:Double, fromFront:Boolean) = {
     sc.parallelize(subvolumes, subvolumes.length).map(subvolume => {
       val dimensions_file = data_root + "/" + subvolume + "/dimensions.txt"
       val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
 
-      val size = dimensions(0)
-      val step = (size(1) * size(2), size(2), 1)
+      val outerDimensions = (dimensions(0)(0), dimensions(0)(1), dimensions(0)(2))
+      //val size = dimensions(0)
+      //val step = (size(1) * size(2), size(2), 1)
       val min_idx_all = (dimensions(1)(0), dimensions(1)(1), dimensions(1)(2))
       val max_idx_all = (dimensions(2)(0), dimensions(2)(1), dimensions(2)(2))
 
@@ -80,12 +83,10 @@ object NeuronUtils {
       val max_idx = if(!fromFront) max_idx_all
         else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2, max_idx_all._3)
 
-
       val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
       val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
 
-      println("From " + min_idx + " to " + max_idx)
-      Dimensions(step, min_idx, max_idx, n_targets, target_index_offset)
+      Dimensions(outerDimensions, min_idx, max_idx, n_targets, target_index_offset)
     })
   }
 

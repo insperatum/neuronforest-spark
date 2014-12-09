@@ -32,7 +32,7 @@ object Main {
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
     //val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
     //  nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
-    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 50, 0.1)
+    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 0.1)
 
     val model = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)

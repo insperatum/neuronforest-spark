@@ -160,9 +160,9 @@ object MyGradientBoostedTrees extends Logging {
 
     timer.stop("init")
 
-    logDebug("##########")
-    logDebug("Building tree 0")
-    logDebug("##########")
+    println("##########")
+    println("Building tree 0")
+    println("##########")
     var data = input
 
     // Initialize tree
@@ -183,9 +183,9 @@ object MyGradientBoostedTrees extends Logging {
     var m = 1
     while (m < numIterations) {
       timer.start(s"building tree $m")
-      logDebug("###################################################")
-      logDebug("Gradient boosting tree iteration " + m)
-      logDebug("###################################################")
+      println("###################################################")
+      println("Gradient boosting tree iteration " + m)
+      println("###################################################")
       val model = new MyDecisionTree(treeStrategy).run(data, numFeatures, numExamples, splits, bins, featureSubsetStrategy)
       timer.stop(s"building tree $m")
       // Create partial model
