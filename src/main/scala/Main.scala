@@ -1,4 +1,6 @@
 import java.io
+import java.text.SimpleDateFormat
+import java.util.{Date, Calendar}
 
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
@@ -49,21 +51,23 @@ object Main {
       val prediction = model.predict(Vectors.dense(features))
       (point.label, prediction)
     }.cache()
-    labelsAndPredictions.mapPartitionsWithIndex( (i, p) => {
-      NeuronUtils.saveLabelsAndPredictions("/masters_predictions/" + i, p, dimensions_test(i))
-      Iterator(None)
-    }).take(1)
-    val testMSE = labelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()
+
+   val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
+   labelsAndPredictions.mapPartitionsWithIndex( (i, p) => {
+      println("save:")
+      NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/" + i, p, dimensions_test(i), s.toString)
+      Iterator("foo")
+    }).count()
+    val testMSE = labelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()/3
     println("Test Mean Squared Error = " + testMSE)
-    println("Learned regression tree model:\n" + model)
   }
 
 
   // -----------------------------------------------------------------------
 
-  case class RunSettings(maxMemoryInMB:Int, data_root:String, subvolumes:Array[String], featureSubsetStrategy:String,
+  case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
-                         dimOffsets:Array[Int], master:String, trainFraction:Double)
+                         dimOffsets:Seq[Int], master:String, trainFraction:Double)
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
     println("Called with args:")
@@ -71,18 +75,19 @@ object Main {
 
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
     RunSettings(
-      maxMemoryInMB = m.getOrElse("maxMemoryInMB", "1000").toInt,
+      maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
 
-      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
+      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_1"),
+      save_to       = m.getOrElse("save_to",       "/masters_predictions"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
-      subvolumes    = m.getOrElse("subvolumes",    "000").split(",").toArray,
+      subvolumes    = m.getOrElse("subvolumes",    "000").split(","),
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
       impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
       maxDepth      = m.getOrElse("maxDepth",      "14").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,
       nTrees        = m.getOrElse("nTrees",        "50").toInt,
-      dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt).toArray,
+      dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble
     )

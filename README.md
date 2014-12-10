@@ -23,7 +23,14 @@ unzip awscli-bundle.zip
 
 ./spark-ec2/copy-dir /root/sparkdata
 
+./spark-ec2/copy-dir ./neuronforest.jar
+
 ./spark/bin/spark-submit --master spark://*local master address*:7077 --class Main ./neuronforest.jar data_root=/root/data/im1/split_2 master=
+
+
+to run a command on all slaves:
+
+cat ./spark-ec2/slaves | while read line; do ssh -t -t root@$line 'SOME COMMAND' & sleep 0.5; done
 
 
 to stop:

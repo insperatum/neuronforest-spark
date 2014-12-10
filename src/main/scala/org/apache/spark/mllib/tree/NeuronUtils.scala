@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
 
 object NeuronUtils {
 
-  def cached[T: ClassTag](rdd:RDD[T]) = {
+  def cached[T: ClassTag](rdd:RDD[T]) = { //todo: add unpersist!
     rdd.mapPartitions(p =>
       Iterator(p.toSeq)
     ).cache().mapPartitions(p =>
@@ -26,15 +26,15 @@ object NeuronUtils {
     )
   }
 
-  def getSplitsAndBins(subvolumes: Array[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Array[(Int, Int, Int)]) = {
+  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int, Int)]) = {
     println("getting splits and bins")
     val features_file_1 = data_root + "/" + subvolumes(0) + "/features.raw"
     val features_data_1 = new RawFeatureData(features_file_1, nBaseFeatures)
     getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, offsets.length)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
   }
 
-  def loadData(sc: SparkContext, subvolumes: Array[String], nBaseFeatures: Int, data_root: String,
-               maxBins:Int, offsets:Array[(Int, Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
+  def loadData(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
+               maxBins:Int, offsets:Seq[(Int, Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
     val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
       val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
       Seq(new RawFeatureData(features_file, nBaseFeatures)).toIterator
@@ -76,7 +76,7 @@ object NeuronUtils {
 
   case class Dimensions(outerDimensions:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
 
-  private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Array[String], proportion:Double, fromFront:Boolean) = {
+  private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Seq[String], proportion:Double, fromFront:Boolean) = {
     sc.parallelize(subvolumes, subvolumes.length).map(subvolume => {
       val dimensions_file = data_root + "/" + subvolume + "/dimensions.txt"
       val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
@@ -145,10 +145,15 @@ object NeuronUtils {
   }
 
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions): Unit = {
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions, description:String): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
+
+    val fwdescription = new FileWriter(path + "/description.txt", false)
+    fwdescription.write(description)
+    fwdescription.close()
+
 
     val fwdimensions = new FileWriter(path + "/dimensions.txt", false)
     import dimensions.{min_idx, max_idx}
