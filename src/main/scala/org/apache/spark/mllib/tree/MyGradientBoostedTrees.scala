@@ -28,6 +28,7 @@ import org.apache.spark.mllib.tree.impurity.{MyVariance, Variance}
 import org.apache.spark.mllib.tree.model.{Bin, Split, MyDecisionTreeModel, MyGradientBoostedTreesModel}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.mllib.tree.NeuronUtils.cached
 
 /**
  * :: Experimental ::
@@ -127,7 +128,7 @@ object MyGradientBoostedTrees extends Logging {
    * @return a gradient boosted trees model that can be used for prediction
    */
   private def boost(
-      input: RDD[MyTreePoint],
+      uncachedInput: RDD[MyTreePoint],
       boostingStrategy: MyBoostingStrategy,
       numFeatures:Int,
       numExamples:Int,
@@ -154,9 +155,10 @@ object MyGradientBoostedTrees extends Logging {
     treeStrategy.assertValid()
 
     // Cache input
-    if (input.getStorageLevel == StorageLevel.NONE) {
-      //input.persist(StorageLevel.MEMORY_AND_DISK) todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
-    }
+//    if (input.getStorageLevel == StorageLevel.NONE) {
+//      //input.persist(StorageLevel.MEMORY_AND_DISK) //todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
+//    }
+    val input = cached(uncachedInput)
 
     timer.stop("init")
 

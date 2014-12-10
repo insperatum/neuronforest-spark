@@ -19,7 +19,9 @@ unzip awscli-bundle.zip
 
 *export aws credentials*
 
-./bin/aws s3 cp s3://neuronforest.sparkdata/data data --recursive
+~/aws s3 cp s3://neuronforest.sparkdata/spark sparkdata --recursive
+
+./spark-ec2/copy-dir /root/sparkdata
 
 ./spark/bin/spark-submit --master spark://*local master address*:7077 --class Main ./neuronforest.jar data_root=/root/data/im1/split_2 master=
 

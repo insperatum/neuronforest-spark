@@ -14,8 +14,18 @@ import org.apache.spark.mllib.tree.model.{Bin, Split}
 import org.apache.spark.rdd.RDD
 
 import scala.io.Source
+import scala.reflect.ClassTag
 
 object NeuronUtils {
+
+  def cached[T: ClassTag](rdd:RDD[T]) = {
+    rdd.mapPartitions(p =>
+      Iterator(p.toSeq)
+    ).cache().mapPartitions(p =>
+      p.next().toIterator
+    )
+  }
+
   def getSplitsAndBins(subvolumes: Array[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Array[(Int, Int, Int)]) = {
     println("getting splits and bins")
     val features_file_1 = data_root + "/" + subvolumes(0) + "/features.raw"
@@ -156,6 +166,5 @@ object NeuronUtils {
     fwpredictions.close()
 
     println("\tComplete")
-
   }
 }

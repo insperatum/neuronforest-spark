@@ -27,20 +27,23 @@ object Main {
 
     //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.2, bins, fromFront = true)
+    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
-    //val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
-    //  nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
-    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 0.1)
 
-    val model = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
-    println("trained.")
+//    Random Forest
+    val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
+      nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+
+//    Gradient Boosting
+//    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 0.1)
+//    val model = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
+//      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
+//    println("trained.")
 
 
     //-------------------------- Test ---------------------------------------
-    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 0.8, bins, fromFront = false)
+    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1-s.trainFraction, bins, fromFront = false)
     val labelsAndPredictions = test.map { point =>
       val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
       val prediction = model.predict(Vectors.dense(features))
@@ -60,7 +63,7 @@ object Main {
 
   case class RunSettings(maxMemoryInMB:Int, data_root:String, subvolumes:Array[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
-                         dimOffsets:Array[Int], master:String)
+                         dimOffsets:Array[Int], master:String, trainFraction:Double)
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
     println("Called with args:")
@@ -69,6 +72,7 @@ object Main {
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "1000").toInt,
+
       data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = m.getOrElse("subvolumes",    "000").split(",").toArray,
@@ -79,7 +83,8 @@ object Main {
       nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,
       nTrees        = m.getOrElse("nTrees",        "50").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt).toArray,
-      master        = m.getOrElse("master",        "local") // use empty string to not setdata_
+      master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
+      trainFraction = m.getOrElse("trainFraction", "0.5").toDouble
     )
   }
 }

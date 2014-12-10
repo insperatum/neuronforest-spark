@@ -36,44 +36,21 @@
       <file leaf-file-name="MalisLoss.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="923" max-vertical-offset="1770">
-              <caret line="48" column="76" selection-start-line="48" selection-start-column="76" selection-end-line="48" selection-end-column="76" />
-              <folding>
-                <element signature="e#42#97#0" expanded="true" />
-              </folding>
+            <state vertical-scroll-proportion="0.0" vertical-offset="658" max-vertical-offset="1665">
+              <caret line="64" column="6" selection-start-line="64" selection-start-column="6" selection-end-line="64" selection-end-column="6" />
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MyGradientBoostedTrees.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="MyGradientBoostedTrees.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyGradientBoostedTrees.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.37469587" vertical-offset="2321" max-vertical-offset="3360">
-              <caret line="165" column="20" selection-start-line="165" selection-start-column="20" selection-end-line="165" selection-end-column="20" />
+            <state vertical-scroll-proportion="4.962963" vertical-offset="2414" max-vertical-offset="3165">
+              <caret line="167" column="8" selection-start-line="167" selection-start-column="8" selection-end-line="167" selection-end-column="8" />
               <folding>
-                <element signature="n#!!doc" expanded="true" />
                 <element signature="e#839#870#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MyLoss.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLoss.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="390">
-              <caret line="35" column="60" selection-start-line="35" selection-start-column="60" selection-end-line="35" selection-end-column="60" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MyLosses.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLosses.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="300">
-              <caret line="28" column="1" selection-start-line="28" selection-start-column="1" selection-end-line="28" selection-end-column="1" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -81,10 +58,9 @@
       <file leaf-file-name="MyRandomForest.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="2286" max-vertical-offset="8280">
-              <caret line="174" column="90" selection-start-line="174" selection-start-column="90" selection-end-line="174" selection-end-column="90" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="2158" max-vertical-offset="8055">
+              <caret line="248" column="16" selection-start-line="248" selection-start-column="16" selection-end-line="248" selection-end-column="16" />
               <folding>
-                <element signature="n#!!doc" expanded="true" />
                 <element signature="e#839#870#0" expanded="true" />
               </folding>
             </state>
@@ -94,11 +70,9 @@
       <file leaf-file-name="Main.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/Main.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="385" max-vertical-offset="1350">
-              <caret line="34" column="38" selection-start-line="34" selection-start-column="38" selection-end-line="34" selection-end-column="38" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
-              </folding>
+            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1290">
+              <caret line="45" column="140" selection-start-line="45" selection-start-column="140" selection-end-line="45" selection-end-column="140" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -106,40 +80,39 @@
       <file leaf-file-name="MyDecisionTree.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="585" max-vertical-offset="18060">
-              <caret line="62" column="22" selection-start-line="62" selection-start-column="22" selection-end-line="62" selection-end-column="22" />
-              <folding>
-                <element signature="n#!!doc" expanded="true" />
-                <element signature="e#839#870#0" expanded="true" />
-                <element signature="e#16398#16402#0" expanded="true" />
-                <element signature="e#18549#18553#0" expanded="true" />
-                <element signature="e#21106#21110#0" expanded="true" />
-                <element signature="e#23540#23544#0" expanded="true" />
-              </folding>
+            <state vertical-scroll-proportion="0.0" vertical-offset="3939" max-vertical-offset="18060">
+              <caret line="270" column="21" selection-start-line="270" selection-start-column="21" selection-end-line="270" selection-end-column="21" />
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="NeuronUtils.scala" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="NeuronUtils.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="850" max-vertical-offset="2310">
-              <caret line="86" column="15" selection-start-line="86" selection-start-column="15" selection-end-line="86" selection-end-column="15" />
-              <folding>
-                <element signature="e#6524#6528#0" expanded="true" />
-              </folding>
+            <state vertical-scroll-proportion="0.07614213" vertical-offset="90" max-vertical-offset="2430">
+              <caret line="23" column="27" selection-start-line="23" selection-start-column="27" selection-end-line="23" selection-end-column="27" />
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="FeatureData.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/FeatureData.scala">
+      <file leaf-file-name="MyLabeledPoint.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="232" max-vertical-offset="1275">
-              <caret line="21" column="4" selection-start-line="21" selection-start-column="4" selection-end-line="21" selection-end-column="48" />
-              <folding>
-                <element signature="e#37#68#0" expanded="true" />
-              </folding>
+            <state vertical-scroll-proportion="0.0" vertical-offset="138" max-vertical-offset="765">
+              <caret line="33" column="90" selection-start-line="33" selection-start-column="90" selection-end-line="33" selection-end-column="90" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MyTreePoint.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="570" max-vertical-offset="2595">
+              <caret line="38" column="17" selection-start-line="38" selection-start-column="17" selection-end-line="38" selection-end-column="17" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -154,8 +127,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/LukeUtil.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/org/apache/spark/mllib/tree/impl/DecisionTreeMetadata.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/org/apache/spark/mllib/tree/impl/FeatureData.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/org/apache/spark/mllib/tree/impl/TreePoint.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/TreePoint.scala" />
@@ -191,20 +162,22 @@
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLosses.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/LabeledPoint.scala" />
         <option value="$PROJECT_DIR$/.idea/workspace.xml" />
-        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/configuration/MyBoostingStrategy.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLoss.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/Indexer.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/Indexer3D.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/FeatureData.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/Main.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/Main2.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/Test.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyGradientBoostedTrees.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/Main.scala" />
       </list>
     </option>
   </component>
@@ -243,7 +216,6 @@
     </navigator>
     <panes>
       <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -357,14 +329,6 @@
               <option name="myItemId" value="mllib" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="regression" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="MyLabeledPoint.scala" />
-              <option name="myItemType" value="org.jetbrains.plugins.scala.components.ScalaDefsProjectViewProvider$ScalaFileTreeNode" />
-            </PATH_ELEMENT>
           </PATH>
           <PATH>
             <PATH_ELEMENT>
@@ -386,6 +350,7 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -402,14 +367,14 @@
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="last_opened_file_path" value="$USER_HOME$/fuuuu2/spark" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/" />
     <property name="recentsLimit" value="5" />
     <property name="dynamic.classpath" value="false" />
-    <property name="Downloaded.Files.Path.Enabled" value="false" />
+    <property name="Downloaded.Files.Path.Enabled" value="true" />
     <property name="Repository.Attach.JavaDocs" value="false" />
     <property name="Repository.Attach.Sources" value="false" />
     <property name="LayoutCode.rearrangeEntriesScala" value="false" />
-    <property name="SearchEverywhereHistoryKey" value="N&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala&#10;MyTree&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;MyD&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala&#10;MyTreePoint&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;Double3&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/Double3.scala&#10;D&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/Double3.scala&#10;MyDecis&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala&#10;MyTre&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;MyDec&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala" />
+    <property name="SearchEverywhereHistoryKey" value="Labe&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala&#10;MyT&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;Label&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala&#10;N&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala&#10;MyTree&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;MyD&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala&#10;MyTreePoint&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;Double3&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/Double3.scala&#10;D&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/Double3.scala&#10;MyDecis&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala&#10;MyTre&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala&#10;MyDec&#9;FILE&#9;file:///home/luke/neuronforest-spark/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala" />
     <property name="FullScreen" value="false" />
   </component>
   <component name="PyConsoleOptionsProvider">
@@ -498,6 +463,38 @@
       </RunnerSettings>
       <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Debug" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Main2" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="Main2" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="neuronforest-spark" />
+      <envs />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Test" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="Test" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="neuronforest-spark" />
+      <envs />
+      <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Run" />
       <method />
     </configuration>
@@ -642,14 +639,18 @@
       <setting name="showProgressMessages" value="true" />
       <method />
     </configuration>
-    <list size="2">
+    <list size="4">
       <item index="0" class="java.lang.String" itemvalue="Application.Main" />
       <item index="1" class="java.lang.String" itemvalue="Application.MalisLoss" />
+      <item index="2" class="java.lang.String" itemvalue="Application.Main2" />
+      <item index="3" class="java.lang.String" itemvalue="Application.Test" />
     </list>
     <recent_temporary>
-      <list size="2">
+      <list size="4">
         <item index="0" class="java.lang.String" itemvalue="Application.Main" />
-        <item index="1" class="java.lang.String" itemvalue="Application.MalisLoss" />
+        <item index="1" class="java.lang.String" itemvalue="Application.Test" />
+        <item index="2" class="java.lang.String" itemvalue="Application.Main2" />
+        <item index="3" class="java.lang.String" itemvalue="Application.MalisLoss" />
       </list>
     </recent_temporary>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
@@ -685,9 +686,8 @@
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32771823" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24961598" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.27565083" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.27411944" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.21745789" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -698,12 +698,13 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.28776434" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.081571" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.5267994" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.88361406" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32771823" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="SBT" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3290469" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.081571" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
     </layout>
   </component>
   <component name="Vcs.Log.UiProperties">
@@ -732,31 +733,87 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impl/TreePoint.class">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.12064343" vertical-offset="0" max-vertical-offset="373">
-          <caret line="3" column="21" selection-start-line="3" selection-start-column="21" selection-end-line="3" selection-end-column="21" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1770">
+          <caret line="48" column="76" selection-start-line="48" selection-start-column="76" selection-end-line="48" selection-end-column="76" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/RandomForest.class">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyGradientBoostedTrees.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.36193028" vertical-offset="0" max-vertical-offset="373">
-          <caret line="9" column="22" selection-start-line="9" selection-start-column="22" selection-end-line="9" selection-end-column="22" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="2355" max-vertical-offset="3360">
+          <caret line="157" column="52" selection-start-line="157" selection-start-column="52" selection-end-line="157" selection-end-column="52" />
+          <folding>
+            <element signature="e#839#870#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impl/NodeIdCache.class">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLoss.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.12362637" vertical-offset="0" max-vertical-offset="364">
-          <caret line="3" column="6" selection-start-line="3" selection-start-column="6" selection-end-line="3" selection-end-column="6" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="525" max-vertical-offset="690">
+          <caret line="35" column="60" selection-start-line="35" selection-start-column="60" selection-end-line="35" selection-end-column="60" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impl/NodeIndexUpdater.class">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.12362637" vertical-offset="0" max-vertical-offset="364">
-          <caret line="3" column="6" selection-start-line="3" selection-start-column="6" selection-end-line="3" selection-end-column="6" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="2467" max-vertical-offset="8280">
+          <caret line="174" column="52" selection-start-line="174" selection-start-column="52" selection-end-line="174" selection-end-column="52" />
+          <folding>
+            <element signature="e#839#870#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/Main.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="385" max-vertical-offset="1350">
+          <caret line="34" column="38" selection-start-line="34" selection-start-column="38" selection-end-line="34" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="3939" max-vertical-offset="18060">
+          <caret line="270" column="21" selection-start-line="270" selection-start-column="21" selection-end-line="270" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="1290" max-vertical-offset="2505">
+          <caret line="86" column="15" selection-start-line="86" selection-start-column="15" selection-end-line="86" selection-end-column="15" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/FeatureData.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="503" max-vertical-offset="1275">
+          <caret line="53" column="0" selection-start-line="53" selection-start-column="0" selection-end-line="53" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="138" max-vertical-offset="765">
+          <caret line="33" column="90" selection-start-line="33" selection-start-column="90" selection-end-line="33" selection-end-column="90" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="570" max-vertical-offset="2595">
+          <caret line="38" column="17" selection-start-line="38" selection-start-column="17" selection-end-line="38" selection-end-column="17" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -774,76 +831,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/model/DecisionTreeModel.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.09202454" vertical-offset="0" max-vertical-offset="326">
-          <caret line="2" column="32" selection-start-line="2" selection-start-column="32" selection-end-line="2" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/model/TreeEnsembleModel.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.065645516" vertical-offset="0" max-vertical-offset="457">
-          <caret line="2" column="6" selection-start-line="2" selection-start-column="6" selection-end-line="2" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impurity/EntropyAggregator.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.032822758" vertical-offset="0" max-vertical-offset="457">
-          <caret line="1" column="37" selection-start-line="1" selection-start-column="37" selection-end-line="1" selection-end-column="37" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impurity/ImpurityAggregator.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.032822758" vertical-offset="0" max-vertical-offset="457">
-          <caret line="1" column="29" selection-start-line="1" selection-start-column="29" selection-end-line="1" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impurity/ImpurityCalculator.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.03448276" vertical-offset="0" max-vertical-offset="435">
-          <caret line="1" column="29" selection-start-line="1" selection-start-column="29" selection-end-line="1" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impl/DTStatsAggregator.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.13204226" vertical-offset="0" max-vertical-offset="568">
-          <caret line="5" column="6" selection-start-line="5" selection-start-column="6" selection-end-line="5" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/configuration/Algo.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.076271184" vertical-offset="0" max-vertical-offset="590">
-          <caret line="3" column="7" selection-start-line="3" selection-start-column="7" selection-end-line="3" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impurity/Variance.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.050847456" vertical-offset="0" max-vertical-offset="590">
-          <caret line="2" column="7" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/configuration/Strategy.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.050847456" vertical-offset="0" max-vertical-offset="735">
-          <caret line="2" column="6" selection-start-line="2" selection-start-column="6" selection-end-line="2" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/impl/DecisionTreeMetadata.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.026501767" vertical-offset="0" max-vertical-offset="566">
-          <caret line="1" column="40" selection-start-line="1" selection-start-column="40" selection-end-line="1" selection-end-column="40" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impurity/MyImpurities.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.2476415" vertical-offset="0" max-vertical-offset="424">
@@ -858,31 +845,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/model/Node.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.082417585" vertical-offset="0" max-vertical-offset="450">
-          <caret line="2" column="6" selection-start-line="2" selection-start-column="6" selection-end-line="2" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/scala/Double.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.3899204" vertical-offset="1218" max-vertical-offset="1620">
-          <caret line="91" column="7" selection-start-line="91" selection-start-column="7" selection-end-line="91" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/MyNode.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="6.567164" vertical-offset="0" max-vertical-offset="3975">
           <caret line="176" column="80" selection-start-line="176" selection-start-column="80" selection-end-line="176" selection-end-column="80" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/model/InformationGainStats.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.082417585" vertical-offset="0" max-vertical-offset="364">
-          <caret line="2" column="6" selection-start-line="2" selection-start-column="6" selection-end-line="2" selection-end-column="6" />
         </state>
       </provider>
     </entry>
@@ -907,13 +873,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/com/github/fommil/netlib/BLAS.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.36466166" vertical-offset="143" max-vertical-offset="4455">
-          <caret line="17" column="48" selection-start-line="17" selection-start-column="48" selection-end-line="17" selection-end-column="48" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/MyDecisionTreeModel.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.63190186" vertical-offset="739" max-vertical-offset="1635">
@@ -925,7 +884,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="2.8035145" vertical-offset="0" max-vertical-offset="2235">
           <caret line="117" column="0" selection-start-line="117" selection-start-column="0" selection-end-line="117" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -936,51 +894,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/scala/package.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.35405406" vertical-offset="514" max-vertical-offset="1170">
-          <caret line="43" column="7" selection-start-line="43" selection-start-column="7" selection-end-line="43" selection-end-column="7" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/regression/LabeledPoint.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.04360465" vertical-offset="0" max-vertical-offset="344">
-          <caret line="1" column="11" selection-start-line="1" selection-start-column="11" selection-end-line="1" selection-end-column="11" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/configuration/BoostingStrategy.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0872093" vertical-offset="0" max-vertical-offset="345">
-          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/fuuuu2/spark/dist/lib/spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4.jar!/org/apache/spark/mllib/tree/model/GradientBoostedTreesModel.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0872093" vertical-offset="0" max-vertical-offset="344">
-          <caret line="2" column="31" selection-start-line="2" selection-start-column="31" selection-end-line="2" selection-end-column="31" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyDecisionTreeMetadata.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.33333334" vertical-offset="975" max-vertical-offset="2895">
-          <caret line="96" column="21" selection-start-line="96" selection-start-column="21" selection-end-line="96" selection-end-column="21" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="1.5251989" vertical-offset="2170" max-vertical-offset="18795">
           <caret line="183" column="86" selection-start-line="183" selection-start-column="86" selection-end-line="183" selection-end-column="86" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -988,15 +905,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.45938376" vertical-offset="541" max-vertical-offset="2445">
           <caret line="71" column="27" selection-start-line="71" selection-start-column="27" selection-end-line="71" selection-end-column="27" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="161" max-vertical-offset="765">
-          <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1004,7 +912,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="300">
           <caret line="28" column="1" selection-start-line="28" selection-start-column="1" selection-end-line="28" selection-end-column="1" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1012,7 +919,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.07692308" vertical-offset="0" max-vertical-offset="390">
           <caret line="2" column="7" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1024,62 +930,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="2466" max-vertical-offset="8280">
-          <caret line="174" column="90" selection-start-line="174" selection-start-column="90" selection-end-line="174" selection-end-column="90" />
-          <folding>
-            <element signature="n#!!doc" expanded="true" />
-            <element signature="e#839#870#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.33333334" vertical-offset="200" max-vertical-offset="2370">
-          <caret line="37" column="22" selection-start-line="37" selection-start-column="22" selection-end-line="37" selection-end-column="22" />
-          <folding>
-            <element signature="e#844#888#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/Indexer3D.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.09836066" vertical-offset="0" max-vertical-offset="360">
           <caret line="2" column="20" selection-start-line="2" selection-start-column="20" selection-end-line="2" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="923" max-vertical-offset="1770">
-          <caret line="48" column="76" selection-start-line="48" selection-start-column="76" selection-end-line="48" selection-end-column="76" />
-          <folding>
-            <element signature="e#42#97#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="850" max-vertical-offset="2310">
-          <caret line="86" column="15" selection-start-line="86" selection-start-column="15" selection-end-line="86" selection-end-column="15" />
-          <folding>
-            <element signature="e#6524#6528#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/FeatureData.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="232" max-vertical-offset="1275">
-          <caret line="21" column="4" selection-start-line="21" selection-start-column="4" selection-end-line="21" selection-end-column="48" />
-          <folding>
-            <element signature="e#37#68#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1087,11 +941,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.6785714" vertical-offset="315" max-vertical-offset="1470">
           <caret line="40" column="34" selection-start-line="40" selection-start-column="22" selection-end-line="40" selection-end-column="34" />
-          <folding>
-            <element signature="n#!!doc" expanded="true" />
-            <element signature="e#853#900#0" expanded="true" />
-            <element signature="e#2208#2212#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1099,43 +948,89 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.33333334" vertical-offset="610" max-vertical-offset="2550">
           <caret line="71" column="6" selection-start-line="71" selection-start-column="6" selection-end-line="71" selection-end-column="6" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="585" max-vertical-offset="18060">
-          <caret line="62" column="22" selection-start-line="62" selection-start-column="22" selection-end-line="62" selection-end-column="22" />
-          <folding>
-            <element signature="n#!!doc" expanded="true" />
-            <element signature="e#839#870#0" expanded="true" />
-            <element signature="e#16398#16402#0" expanded="true" />
-            <element signature="e#18549#18553#0" expanded="true" />
-            <element signature="e#21106#21110#0" expanded="true" />
-            <element signature="e#23540#23544#0" expanded="true" />
-          </folding>
+        <state vertical-scroll-proportion="0.0" vertical-offset="3939" max-vertical-offset="18060">
+          <caret line="270" column="21" selection-start-line="270" selection-start-column="21" selection-end-line="270" selection-end-column="21" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/Main.scala">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyDecisionTreeMetadata.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="250" max-vertical-offset="1350">
-          <caret line="34" column="38" selection-start-line="34" selection-start-column="38" selection-end-line="34" selection-end-column="38" />
+        <state vertical-scroll-proportion="0.33152175" vertical-offset="1093" max-vertical-offset="2895">
+          <caret line="104" column="32" selection-start-line="104" selection-start-column="32" selection-end-line="104" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="225" max-vertical-offset="2370">
+          <caret line="38" column="17" selection-start-line="38" selection-start-column="17" selection-end-line="38" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="138" max-vertical-offset="765">
+          <caret line="33" column="90" selection-start-line="33" selection-start-column="90" selection-end-line="33" selection-end-column="90" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="658" max-vertical-offset="1665">
+          <caret line="64" column="6" selection-start-line="64" selection-start-column="6" selection-end-line="64" selection-end-column="6" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="2338" max-vertical-offset="8055">
+          <caret line="248" column="16" selection-start-line="248" selection-start-column="16" selection-end-line="248" selection-end-column="16" />
           <folding>
-            <element signature="e#0#14#0" expanded="true" />
+            <element signature="e#839#870#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyGradientBoostedTrees.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.37469587" vertical-offset="2321" max-vertical-offset="3360">
-          <caret line="165" column="20" selection-start-line="165" selection-start-column="20" selection-end-line="165" selection-end-column="20" />
+        <state vertical-scroll-proportion="4.962963" vertical-offset="2414" max-vertical-offset="3165">
+          <caret line="167" column="8" selection-start-line="167" selection-start-column="8" selection-end-line="167" selection-end-column="8" />
           <folding>
-            <element signature="n#!!doc" expanded="true" />
             <element signature="e#839#870#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/Main.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1290">
+          <caret line="45" column="140" selection-start-line="45" selection-start-column="140" selection-end-line="45" selection-end-column="140" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/FeatureData.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.22350994" vertical-offset="585" max-vertical-offset="1200">
+          <caret line="53" column="0" selection-start-line="53" selection-start-column="0" selection-end-line="53" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.07614213" vertical-offset="90" max-vertical-offset="2430">
+          <caret line="23" column="27" selection-start-line="23" selection-start-column="27" selection-end-line="23" selection-end-column="27" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -1193,7 +1088,7 @@
       </state>
       <state key="ModuleStructureConfigurable.UI">
         <settings>
-          <last-edited>neuronforest-spark-build</last-edited>
+          <last-edited>neuronforest-spark</last-edited>
           <splitter-proportions>
             <option name="proportions">
               <list>
@@ -1217,7 +1112,7 @@
       </state>
       <state key="ProjectLibrariesConfigurable.UI">
         <settings>
-          <last-edited>com.google.guava:guava:14.0</last-edited>
+          <last-edited>spark-assembly-1.3.0-SNAPSHOT-hadoop1.0.4</last-edited>
           <splitter-proportions>
             <option name="proportions">
               <list>

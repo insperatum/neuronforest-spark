@@ -32,6 +32,7 @@ import org.apache.spark.mllib.tree.impl.TimeTracker
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
+import org.apache.spark.mllib.tree.NeuronUtils.cached
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -171,8 +172,7 @@ private class MyRandomForest (
     }
 
     val baggedInput
-      = BaggedPoint.convertToBaggedRDD(treeInput, subsample, numTrees, withReplacement, seed)
-        //.persist(StorageLevel.MEMORY_AND_DISK) todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
+      = cached(BaggedPoint.convertToBaggedRDD(treeInput, subsample, numTrees, withReplacement, seed))
 
     // depth of the decision tree
     val maxDepth = strategy.maxDepth

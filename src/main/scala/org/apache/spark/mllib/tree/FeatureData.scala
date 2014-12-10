@@ -50,7 +50,7 @@ class RawFeatureData(file:String, val nFeatures:Int) extends FeatureData with Se
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
                         val dimensions:(Int, Int, Int),
-                        offsets:Seq[(Int, Int, Int)]) {
+                        offsets:Seq[(Int, Int, Int)]) extends Serializable {
 
   val step = (dimensions._2 * dimensions._3, dimensions._3, 1)
 

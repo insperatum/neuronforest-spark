@@ -31,7 +31,7 @@ import scala.beans.BeanInfo
  * @param features List of features for this data point.
  */
 @BeanInfo
-case class MyLabeledPoint(label: Double3, features: Vector) {
+case class MyLabeledPoint(label: Double3, features: Vector) { //todo get rid of this class
   override def toString: String = {
     "(%s,%s)".format(label, features)
   }
