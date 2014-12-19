@@ -50,18 +50,12 @@ object NeuronUtils {
       val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
 
       val indexer = new Indexer3D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
-//      val seg_size = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
-//      val seg_step = (seg_size._2 * seg_size._3, seg_size._3, 1)
 
-      val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer.innerDimensions, offsets)
+      val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets)
       val d = targets.zipWithIndex.map { case (ts, idx) =>
         val y = Double3(ts(0), ts(1), ts(2))
         val seg = ts(3).toInt
         val example_idx = indexer.innerToOuter(idx)
-//        val example_idx =
-//          step._1 * (min_idx._1 + idx / seg_step._1) +
-//            step._2 * (min_idx._2 + (idx % seg_step._1) / seg_step._2) +
-//            (min_idx._3 + idx % seg_step._2)
         new MyTreePoint(y, seg, binnedFeatureData, example_idx)
       }
 
