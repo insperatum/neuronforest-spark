@@ -1,27 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/regression/MyLabeledPoint.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/FeatureData.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyDecisionTree.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyGradientBoostedTrees.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/MyRandomForest.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/configuration/MyBoostingStrategy.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/configuration/MyStrategy.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyDTStatsAggregator.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyDecisionTreeMetadata.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyNodeIdCache.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impl/MyTreePoint.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impurity/MyImpurities.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impurity/MyImpurity.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/impurity/MyVariance.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLoss.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MyLosses.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/MyDecisionTreeModel.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/MyInformationGainStats.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/MyNode.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/MyPredict.scala" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/model/myTreeEnsembleModels.scala" charset="UTF-8" />
-  </component>
+  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
 </project>
-

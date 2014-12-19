@@ -77,7 +77,7 @@ object Main {
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
 
-      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_1"),
+      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = m.getOrElse("subvolumes",    "000").split(","),

@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/neuronforest-spark.iml" filepath="$PROJECT_DIR$/.idea/modules/neuronforest-spark.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/neuronforest-spark-build.iml" filepath="$PROJECT_DIR$/.idea/modules/neuronforest-spark-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/neuronforest-spark.iml" filepath="$PROJECT_DIR$/.idea/neuronforest-spark.iml" />
     </modules>
   </component>
 </project>
-
