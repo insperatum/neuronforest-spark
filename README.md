@@ -7,7 +7,7 @@ neuronforest-spark
 
 ./spark-ec2 -k luke -i ~/luke.pem -s 8 --instance-type=m3.medium --region=eu-west-1 --spark-version=e895e0cbecbbec1b412ff21321e57826d2d0a982 launch *NAME*
 
-scp -i ~/luke.pem /home/luke/neuronforest-spark/out/artifacts/neuronforest.jar root@*INSTANCE-ADDRESS*.compute.amazonaws.com:
+scp -i ~/luke.pem /home/luke/IdeaProjects/neuronforest-spark/out/artifacts/neuronforest-spark.jar root@*INSTANCE-ADDRESS*.compute.amazonaws.com:
 
 ./spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 login *NAME*
 
@@ -25,7 +25,7 @@ unzip awscli-bundle.zip
 
 ./spark-ec2/copy-dir ./neuronforest.jar
 
-./spark/bin/spark-submit --master spark://*local master address*:7077 --class Main ./neuronforest.jar data_root=/root/data/im1/split_2 master=
+./spark/bin/spark-submit --master spark://*local master address*:7077 --class Main ./neuronforest.jar data_root=/root/sparkdata/im1/split_2 master=
 
 
 to run a command on all slaves:
