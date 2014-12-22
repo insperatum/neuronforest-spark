@@ -11,8 +11,15 @@ class Indexer3D(val outerDimensions:(Int, Int, Int), val minIdx:(Int, Int, Int),
     outerSteps._2 * (minIdx._2 + (i % innerSteps._1) / innerSteps._2) +
     outerSteps._3 * (minIdx._3 + i % innerSteps._2)
 
+  def outerToInner(i:Int) =
+    innerSteps._1 * (i / outerSteps._1 - minIdx._1) +
+    innerSteps._2 * ((i % outerSteps._1) / outerSteps._2 - minIdx._2) +
+    innerSteps._3 * (i % outerSteps._2 - minIdx._3)
+
   def innerToMulti(i:Int) =
     (i / innerSteps._1,
       (i % innerSteps._1) / innerSteps._2,
       (i % innerSteps._2) / innerSteps._3)
+
+
 }

@@ -139,7 +139,20 @@ object NeuronUtils {
   }
 
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions, description:String): Unit = {
+  def saveSeg(path:String, seg:Iterator[(Int, Int)]): Unit = {
+    println("Saving seg: " + path)
+    val dir =  new io.File(path)
+    if(!dir.exists) dir.mkdirs()
+
+    val fwseg = new FileWriter(path + "/seg.txt", false)
+    seg.foreach{ case (idx, seg) => {
+      fwseg.write(idx + " " + seg + "\n")
+    }}
+    fwseg.close()
+  }
+
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions,
+                               description:String, indexesAndGrads:Array[(Int, Double3)] = null): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
@@ -163,6 +176,14 @@ object NeuronUtils {
     }}
     fwlabels.close()
     fwpredictions.close()
+
+    if(indexesAndGrads != null) {
+      val fwgrads = new FileWriter(path + "/gradients.txt", false)
+      indexesAndGrads.foreach{ case (idx, grad) => {
+        fwgrads.write(idx + " " + grad._1 + " " + grad._2 + " " + grad._3 + "\n")
+      }}
+      fwgrads.close()
+    }
 
     println("\tComplete")
   }

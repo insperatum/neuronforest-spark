@@ -18,6 +18,7 @@
 package org.apache.spark.mllib.tree.model
 
 import com.github.fommil.netlib.BLAS.{getInstance => blas}
+import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.linalg.Vector
@@ -36,7 +37,7 @@ import scala.collection.mutable
  * @param trees tree ensembles
  */
 @Experimental
-class MyRandomForestModel(override val algo: Algo, override val trees: Array[MyDecisionTreeModel])
+class MyRandomForestModel(override val algo: Algo, val trees: Array[MyDecisionTreeModel])
   extends MyTreeEnsembleModel(algo, trees, Array.fill(trees.size)(1.0),
     combiningStrategy = Average) {
 
@@ -48,34 +49,32 @@ class MyRandomForestModel(override val algo: Algo, override val trees: Array[MyD
  * Represents a gradient boosted trees model.
  *
  * @param algo algorithm for the ensemble model, either Classification or Regression
- * @param trees tree ensembles
+ * @param elems tree ensembles
  * @param treeWeights tree ensemble weights
  */
 @Experimental
 class MyGradientBoostedTreesModel(
     override val algo: Algo,
-    override val trees: Array[MyDecisionTreeModel],
+    override val elems: Array[MyRandomForestModel],
     override val treeWeights: Array[Double])
-  extends MyTreeEnsembleModel(algo, trees, treeWeights, combiningStrategy = Sum) {
+  extends MyEnsembleModel[MyRandomForestModel](algo, elems, treeWeights, combiningStrategy = Sum) {
 
-  require(trees.size == treeWeights.size)
+  require(elems.size == treeWeights.size)
 }
 
 /**
  * Represents a tree ensemble model.
  *
  * @param algo algorithm for the ensemble model, either Classification or Regression
- * @param trees tree ensembles
+ * @param elems tree ensembles
  * @param treeWeights tree ensemble weights
  * @param combiningStrategy strategy for combining the predictions, not used for regression.
  */
-private[tree] sealed class MyTreeEnsembleModel(
+private[tree] sealed class MyEnsembleModel[T <: MyModel](
     protected val algo: Algo,
-    protected val trees: Array[MyDecisionTreeModel],
+    protected val elems: Array[T],
     protected val treeWeights: Array[Double],
-    protected val combiningStrategy: EnsembleCombiningStrategy) extends Serializable {
-
-  require(numTrees > 0, "MyTreeEnsembleModel cannot be created without trees.")
+    protected val combiningStrategy: EnsembleCombiningStrategy) extends Serializable with MyModel {
 
   private val sumWeights = math.max(treeWeights.sum, 1e-15)
 
@@ -86,7 +85,7 @@ private[tree] sealed class MyTreeEnsembleModel(
    * @return predicted category from the trained model
    */
   private def predictBySumming(features: Vector): Double3 = {
-    val treePredictions = trees.map(_.predict(features))
+    val treePredictions = elems.map(_.predict(features))
     //blas.ddot(numTrees, treePredictions, 1, treeWeights, 1)
     treePredictions.zip(treeWeights).map {case (p, w) => p*w}.reduce(_+_)
   }
@@ -139,11 +138,20 @@ private[tree] sealed class MyTreeEnsembleModel(
   def predict(features: RDD[Vector]): RDD[Double3] = features.map(x => predict(x))
 
   /**
-   * Java-friendly version of [[org.apache.spark.mllib.tree.model.MyTreeEnsembleModel#predict]].
+   * Java-friendly version of [[org.apache.spark.mllib.tree.model.MyEnsembleModel#predict]].
    */
   def predict(features: JavaRDD[Vector]): JavaRDD[java.lang.Double] = {
     predict(features.rdd).toJavaRDD().asInstanceOf[JavaRDD[java.lang.Double]]
   }
+}
+
+
+private[tree] sealed class MyTreeEnsembleModel(
+    algo: Algo,
+    elems: Array[MyDecisionTreeModel],
+    treeWeights: Array[Double],
+    combiningStrategy: EnsembleCombiningStrategy)
+  extends MyEnsembleModel[MyDecisionTreeModel](algo, elems, treeWeights, combiningStrategy) {
 
   /**
    * Print a summary of the model.
@@ -164,7 +172,7 @@ private[tree] sealed class MyTreeEnsembleModel(
    */
   def toDebugString: String = {
     val header = toString + "\n"
-    header + trees.zipWithIndex.map { case (tree, treeIndex) =>
+    header + elems.zipWithIndex.map { case (tree, treeIndex) =>
       s"  Tree $treeIndex:\n" + tree.topNode.subtreeToString(4)
     }.fold("")(_ + _)
   }
@@ -172,10 +180,12 @@ private[tree] sealed class MyTreeEnsembleModel(
   /**
    * Get number of trees in forest.
    */
-  def numTrees: Int = trees.size
+  def numTrees: Int = elems.size
 
   /**
    * Get total number of nodes, summed over all trees in the forest.
    */
-  def totalNumNodes: Int = trees.map(_.numNodes).sum
+  def totalNumNodes: Int = elems.map(_.numNodes).sum
+
+  require(numTrees > 0, "MyTreeEnsembleModel cannot be created without trees.")
 }

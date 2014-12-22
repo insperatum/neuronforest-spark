@@ -71,6 +71,31 @@ function [r_err, r_tp, r_fp, r_pos, r_neg, p_err, p_tp, p_fp, p_pos, p_neg, p_sq
     affTrue = permute(reshape(labels, [fliplr(dimensions) 3]), [3,2,1,4]);
     affEst = permute(reshape(predictions, [fliplr(dimensions) 3]), [3,2,1,4]);
     
+%     load([file '/gradients.txt'])
+%     [~, idxs_idxs] = sort(sum(gradients(:,2:4), 2));
+%     idxs = gradients(idxs_idxs, 1);
+%     foo = sum(predictions,2)/3;
+%     foo(idxs(1)) = 3;
+%     bar = permute(reshape(foo, fliplr(dimensions)), [3,2,1]);
+%     %BrowseComponents('ii', affEst, bar);
+%     
+%     load('/home/luke/Documents/asdf1/seg.txt')
+%     df = int32(seg);
+%     load('/home/luke/Documents/asdf2/seg.txt')
+%     dt = int32(seg);
+%     asdf = zeros(size(labels, 1), 1);
+%     asdf(df(:, 1) + 1) = 1;
+%     asdf(dt(:, 1) + 1) = 2;
+%     asdf = permute(reshape(asdf, fliplr(dimensions)), [3,2,1]);
+%     
+%     load([file '/seg.txt'])
+%     seg = int32(seg);
+%     segs = zeros(size(seg, 1), 1);
+%     segs(seg(:, 1) + 1) = seg(:, 2);
+%     segs = permute(reshape(segs, fliplr(dimensions)), [3,2,1]);
+%     BrowseComponents('ic', bar, asdf)
+    
+    
     r_err = [];
     r_tp = [];
     r_fp = [];

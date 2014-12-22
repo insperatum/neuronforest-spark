@@ -16,12 +16,14 @@ object Main {
   def main(args:Array[String]) {
     //------------------------ Init ---------------------------------------
 
+    for(i <- 1 to 10) println("Remember to fix train fraction!")
+
     val s = getSettingsFromArgs(args)
     println("Settings:\n" + s)
 
     val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
     val nFeatures = s.nBaseFeatures * offsets.length
-    val conf = new SparkConf().setAppName("Hello")
+    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false")
     if (!s.master.isEmpty) conf.setMaster(s.master)
     val sc = new SparkContext(conf)
 
@@ -34,32 +36,40 @@ object Main {
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
 //    Random Forest
-    val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
-      nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+//    val model = MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
+//      nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
 
 //    Gradient Boosting
-//    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 0.1)
-//    val model = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-//      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
-//    println("trained.")
+    val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 2, 5, math.pow(20, -6)*2)
+    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
+      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
 
-
+    println("trained.")
     //-------------------------- Test ---------------------------------------
-    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1-s.trainFraction, bins, fromFront = false)
-    val labelsAndPredictions = test.map { point =>
+//    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1-s.trainFraction, bins, fromFront = false)
+    val labelsAndPredictions = train.map { point =>
       val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
       val prediction = model.predict(Vectors.dense(features))
       (point.label, prediction)
     }.cache()
 
+    //val indexesAndGrads = grads.map{g => (g.data.indexer.outerToInner(g.idx), g.label)}.collect()
    val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
    labelsAndPredictions.mapPartitionsWithIndex( (i, p) => {
       println("save:")
-      NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/" + i, p, dimensions_test(i), s.toString)
+      NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/" + i, p, dimensions_train(i), s.toString
+        /*,indexesAndGrads*/ )
       Iterator("foo")
     }).count()
-    val testMSE = labelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()/3
-    println("Test Mean Squared Error = " + testMSE)
+
+//    seg.mapPartitionsWithIndex( (i, p) => {
+//      println("save seg:")
+//      NeuronUtils.saveSeg(s.save_to + "/" + timestr + "/" + i, p)
+//      Iterator("foo")
+//    }).count()
+
+    val trainMSE = labelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()/3
+    println("TRAIN! Mean Squared Error = " + trainMSE)
   }
 
 

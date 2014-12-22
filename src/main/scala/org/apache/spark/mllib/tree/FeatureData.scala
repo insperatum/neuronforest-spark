@@ -49,7 +49,7 @@ class RawFeatureData(file:String, val nFeatures:Int) extends FeatureData with Se
 
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
-                        indexer: Indexer3D,
+                        val indexer: Indexer3D,
                         offsets:Seq[(Int, Int, Int)]) extends Serializable {
 
 

@@ -27,7 +27,7 @@ import scala.beans.BeanProperty
  * :: Experimental ::
  * Configuration options for [[org.apache.spark.mllib.tree.GradientBoostedTrees]].
  *
- * @param treeStrategy Parameters for the tree algorithm. We support regression and binary
+ * @param forestStrategy Parameters for the tree algorithm. We support regression and binary
  *                     classification for boosting. Impurity setting will be ignored.
  * @param loss MyLoss function used for minimization during gradient boosting.
  * @param numIterations Number of iterations of boosting.  In other words, the number of
@@ -38,10 +38,11 @@ import scala.beans.BeanProperty
 @Experimental
 case class MyBoostingStrategy(
     // Required boosting parameters
-    @BeanProperty var treeStrategy: MyStrategy,
+    @BeanProperty var forestStrategy: MyStrategy,
     @BeanProperty var loss: MyLoss,
     // Optional boosting parameters
     @BeanProperty var numIterations: Int = 100,
+    @BeanProperty var treesPerIteration: Int = 100,
     @BeanProperty var learningRate: Double = 0.1) extends Serializable {
 
   /**
@@ -49,15 +50,15 @@ case class MyBoostingStrategy(
    * Throws exception if invalid.
    */
   private[tree] def assertValid(): Unit = {
-    treeStrategy.algo match {
+    forestStrategy.algo match {
       case Classification =>
-        require(treeStrategy.numClasses == 2,
+        require(forestStrategy.numClasses == 2,
           "Only binary classification is supported for boosting.")
       case Regression =>
         // nothing
       case _ =>
         throw new IllegalArgumentException(
-          s"BoostingStrategy given invalid algo parameter: ${treeStrategy.algo}." +
+          s"BoostingStrategy given invalid algo parameter: ${forestStrategy.algo}." +
             s"  Valid settings are: Classification, Regression.")
     }
     require(learningRate > 0 && learningRate <= 1,

@@ -17,6 +17,7 @@
 
 package org.apache.spark.mllib.tree.model
 
+import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.linalg.Vector
@@ -32,7 +33,7 @@ import org.apache.spark.rdd.RDD
  * @param algo algorithm type -- classification or regression
  */
 @Experimental
-class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializable {
+class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializable with MyModel {
 
   /**
    * Predict values for a single data point using the model trained.

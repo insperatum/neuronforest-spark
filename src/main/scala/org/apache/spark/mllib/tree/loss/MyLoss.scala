@@ -17,11 +17,12 @@
 
 package org.apache.spark.mllib.tree.loss
 
+import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.mllib.regression.MyLabeledPoint
 import org.apache.spark.mllib.tree.Double3
 import org.apache.spark.mllib.tree.impl.MyTreePoint
-import org.apache.spark.mllib.tree.model.{MyTreeEnsembleModel, TreeEnsembleModel}
+import org.apache.spark.mllib.tree.model.{MyEnsembleModel, MyTreeEnsembleModel, TreeEnsembleModel}
 import org.apache.spark.rdd.RDD
 
 /**
@@ -32,9 +33,9 @@ import org.apache.spark.rdd.RDD
 trait MyLoss extends Serializable {
 
   def gradient(
-      model: MyTreeEnsembleModel,
+      model: MyModel,
       points: RDD[MyTreePoint]): RDD[(MyTreePoint, Double3)]
 
-  def computeError(model: MyTreeEnsembleModel, data: RDD[MyTreePoint]): Double
+  def computeError(model: MyModel, data: RDD[MyTreePoint]): Double
 
 }

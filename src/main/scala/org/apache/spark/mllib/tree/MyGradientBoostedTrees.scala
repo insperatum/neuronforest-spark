@@ -25,7 +25,8 @@ import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.MyBoostingStrategy
 import org.apache.spark.mllib.tree.impl.{MyTreePoint, TimeTracker}
 import org.apache.spark.mllib.tree.impurity.{MyVariance, Variance}
-import org.apache.spark.mllib.tree.model.{Bin, Split, MyDecisionTreeModel, MyGradientBoostedTreesModel}
+import org.apache.spark.mllib.tree.loss.MalisLoss
+import org.apache.spark.mllib.tree.model._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.mllib.tree.NeuronUtils.cached
@@ -134,7 +135,7 @@ object MyGradientBoostedTrees extends Logging {
       numExamples:Int,
       splits:Array[Array[Split]],
       bins:Array[Array[Bin]],
-      featureSubsetStrategy:String = "all"): MyGradientBoostedTreesModel = {
+      featureSubsetStrategy:String = "all"): (MyGradientBoostedTreesModel, RDD[MyTreePoint], RDD[(Int, Int)]) = {
 
     val timer = new TimeTracker()
     timer.start("total")
@@ -144,15 +145,16 @@ object MyGradientBoostedTrees extends Logging {
 
     // Initialize gradient boosting parameters
     val numIterations = boostingStrategy.numIterations
-    val baseLearners = new Array[MyDecisionTreeModel](numIterations)
+    val treesPerIteration = boostingStrategy.treesPerIteration
+    val baseLearners = new Array[MyRandomForestModel](numIterations)
     val baseLearnerWeights = new Array[Double](numIterations)
     val loss = boostingStrategy.loss
     val learningRate = boostingStrategy.learningRate
     // Prepare strategy for individual trees, which use regression with variance impurity.
-    val treeStrategy = boostingStrategy.treeStrategy.copy
-    treeStrategy.algo = Regression
-    treeStrategy.impurity = MyVariance
-    treeStrategy.assertValid()
+    val forestStrategy = boostingStrategy.forestStrategy.copy
+    forestStrategy.algo = Regression
+    forestStrategy.impurity = MyVariance
+    forestStrategy.assertValid()
 
     // Cache input
 //    if (input.getStorageLevel == StorageLevel.NONE) {
@@ -169,7 +171,11 @@ object MyGradientBoostedTrees extends Logging {
 
     // Initialize tree
     timer.start("building tree 0")
-    val firstTreeModel = new MyDecisionTree(treeStrategy).run(data, numFeatures, numExamples, splits, bins, featureSubsetStrategy)
+//    val firstTreeModel = new MyRandomForest(forestStrategy, treesPerIteration, featureSubsetStrategy, 1).
+//      trainFromMyTreePoints(data, numFeatures, numExamples, splits, bins)
+    val firstTreeModel = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
+      1, numFeatures, numExamples, splits, bins
+)
     baseLearners(0) = firstTreeModel
     baseLearnerWeights(0) = 1.0
     val startingModel = new MyGradientBoostedTreesModel(Regression, Array(firstTreeModel), Array(1.0))
@@ -181,14 +187,20 @@ object MyGradientBoostedTrees extends Logging {
     data = loss.gradient(startingModel, input).map{ case (p, grad) => {
       p.copy(label = grad)
     }}
+    val seg = MalisLoss.segment(startingModel, input) //todo: get rid of this
 
+    import math.abs
+    //data.map(d => (d.idx, d.label)).take(10).foreach(println)
+    println(data.map(d => abs(d.label._1) + abs(d.label._2) + abs(d.label._3)).reduce(_+_))
+    println(input.count())
     var m = 1
     while (m < numIterations) {
       timer.start(s"building tree $m")
       println("###################################################")
       println("Gradient boosting tree iteration " + m)
       println("###################################################")
-      val model = new MyDecisionTree(treeStrategy).run(data, numFeatures, numExamples, splits, bins, featureSubsetStrategy)
+      val model = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
+        1, numFeatures, numExamples, splits, bins)
       timer.stop(s"building tree $m")
       // Create partial model
       baseLearners(m) = model
@@ -206,6 +218,7 @@ object MyGradientBoostedTrees extends Logging {
       data = loss.gradient(partialModel, input).map{ case (p, grad) => {
         p.copy(label = grad)
       }}
+
       m += 1
     }
 
@@ -214,7 +227,7 @@ object MyGradientBoostedTrees extends Logging {
     logInfo("Internal timing for MyDecisionTree:")
     logInfo(s"$timer")
 
-    new MyGradientBoostedTreesModel(
-      boostingStrategy.treeStrategy.algo, baseLearners, baseLearnerWeights)
+    (new MyGradientBoostedTreesModel(
+      boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights), data, seg)
   }
 }
