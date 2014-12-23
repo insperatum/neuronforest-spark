@@ -135,7 +135,7 @@ object MyGradientBoostedTrees extends Logging {
       numExamples:Int,
       splits:Array[Array[Split]],
       bins:Array[Array[Bin]],
-      featureSubsetStrategy:String = "all"): (MyGradientBoostedTreesModel, RDD[MyTreePoint], RDD[(Int, Int)]) = {
+      featureSubsetStrategy:String = "all") = {
 
     val timer = new TimeTracker()
     timer.start("total")
@@ -187,7 +187,7 @@ object MyGradientBoostedTrees extends Logging {
     data = loss.gradient(startingModel, input).map{ case (p, grad) => {
       p.copy(label = grad)
     }}
-    val seg = MalisLoss.segment(startingModel, input) //todo: get rid of this
+//    val seg = MalisLoss.segment(startingModel, input) //todo: get rid of this
 
     import math.abs
     //data.map(d => (d.idx, d.label)).take(10).foreach(println)
@@ -227,7 +227,9 @@ object MyGradientBoostedTrees extends Logging {
     logInfo("Internal timing for MyDecisionTree:")
     logInfo(s"$timer")
 
-    (new MyGradientBoostedTreesModel(
-      boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights), data, seg)
+//    (new MyGradientBoostedTreesModel(
+//      boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights), data, seg)
+
+    new MyGradientBoostedTreesModel(boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights)
   }
 }

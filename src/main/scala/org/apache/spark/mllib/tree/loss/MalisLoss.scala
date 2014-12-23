@@ -63,8 +63,8 @@ object MalisLoss extends MyLoss {
     }
 
     println("\n\nBEST delta WAS " + dMax + "\n\n")
-    NeuronUtils.saveSeg("/home/luke/Documents/asdf1", df.map(_ -> 0).toIterator)
-    NeuronUtils.saveSeg("/home/luke/Documents/asdf2", dt.map(_ -> 0).toIterator)
+//    NeuronUtils.saveSeg("/home/luke/Documents/asdf1", df.map(_ -> 0).toIterator)
+//    NeuronUtils.saveSeg("/home/luke/Documents/asdf2", dt.map(_ -> 0).toIterator)
     submaps.reduce(_ ++ _)
   }
 
@@ -103,7 +103,7 @@ object MalisLoss extends MyLoss {
     println("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val gradients = new ArrayBuffer[(MyTreePoint, Double3)]()
 
-    var e:Edge = null
+    var e:Edge = null //todo: all this shit can go once I've got good pictures
     var c:Array[IndexedSeq[Int]] = null
     var af:Int = 0
     var at:Int = 0
