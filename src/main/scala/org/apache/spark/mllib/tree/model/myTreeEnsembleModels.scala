@@ -70,13 +70,17 @@ class MyGradientBoostedTreesModel(
  * @param treeWeights tree ensemble weights
  * @param combiningStrategy strategy for combining the predictions, not used for regression.
  */
-private[tree] sealed class MyEnsembleModel[T <: MyModel](
+class MyEnsembleModel[T <: MyModel](
     protected val algo: Algo,
     protected val elems: Array[T],
     protected val treeWeights: Array[Double],
     protected val combiningStrategy: EnsembleCombiningStrategy) extends Serializable with MyModel {
 
   private val sumWeights = math.max(treeWeights.sum, 1e-15)
+
+  def nElems = elems.size
+  def getPartialModels:Seq[MyEnsembleModel[T]] = (1 to elems.length).map(n =>
+    new MyEnsembleModel(algo, elems.take(n), treeWeights.take(n), combiningStrategy))
 
   /**
    * Predicts for a single data point using the weighted sum of ensemble predictions.

@@ -3,6 +3,7 @@ import java.text.SimpleDateFormat
 import java.util.{Date, Calendar}
 
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
+import org.apache.spark.mllib.tree.model.MyEnsembleModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
 import org.apache.spark.mllib.tree.{MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
@@ -30,11 +31,11 @@ object Main {
 
     //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
+    val (train, dimensions_train) = NeuronUtils.loadDataCached(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
-    val model: MyModel = if (s.mode == "RandomForest") {
+    val model: MyEnsembleModel[_] = if (s.mode == "RandomForest") {
       //    Random Forest
       MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
@@ -55,41 +56,58 @@ object Main {
 
 
     //-------------------------- Test ---------------------------------------
-    val trainLabelsAndPredictions = train.map { point =>
-      val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-      val prediction = model.predict(Vectors.dense(features))
-      (point.label, prediction)
-    }.cache()
+    val (test, dimensions_test) = NeuronUtils.loadDataCached(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
+    val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
 
-    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1-s.trainFraction, bins, fromFront = false)
-    val testLabelsAndPredictions = test.map { point =>
-      val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-      val prediction = model.predict(Vectors.dense(features))
-      (point.label, prediction)
-    }.cache()
+    val allPartialModels:Seq[MyEnsembleModel[_]] = model.getPartialModels
+
+    var partialIndex = 0
+    while(partialIndex < allPartialModels.size) { // If I use a for loop then the compiler does some optimization and all hell breaks loos
+      val partialModel = allPartialModels(partialIndex)
+      //for(/*partialModel <- partialModels*/ _ <- 0 until 1) {
+      val nElems = partialModel.nElems
+      println("\nTesting partial model with " + nElems + " elements")
+
+      // Training Error
+      val trainLabelsAndPredictions = train.map { point =>
+        val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
+        val prediction = partialModel.predict(Vectors.dense(features))
+        (point.label, prediction)
+      }.cache()
+      trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
+        println("save:")
+        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toString
+          /*,indexesAndGrads*/)
+        Iterator("foo")
+      }).count()
+      val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
+      println("Train Mean Squared Error = " + trainMSE)
+      trainLabelsAndPredictions.unpersist()
+
+      // Test Error
+      val testLabelsAndPredictions = test.map { point =>
+        val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
+        val prediction = partialModel.predict(Vectors.dense(features))
+        (point.label, prediction)
+      }.cache()
+      testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
+        println("save:")
+        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toString
+          /*,indexesAndGrads*/)
+        Iterator("foo")
+      }).count()
+      val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
+      println("Test Mean Squared Error = " + testMSE)
+      testLabelsAndPredictions.unpersist()
 
 
+      // If ensemble is only size 5 include all partials. Otherwise include every fifth partial
+      if(model.nElems <= 5) partialIndex += 1
+      else if(partialIndex < allPartialModels.size - 6) partialIndex += 5
+      else if(partialIndex != allPartialModels.size-1) partialIndex = allPartialModels.size-1
+      else partialIndex = allPartialModels.size //break out of loop
+    }
 
-    //val indexesAndGrads = grads.map{g => (g.data.indexer.outerToInner(g.idx), g.label)}.collect()
-   val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
-
-   trainLabelsAndPredictions.mapPartitionsWithIndex( (i, p) => {
-      println("save:")
-      NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/train/" + i, p, dimensions_train(i), s.toString
-        /*,indexesAndGrads*/ )
-      Iterator("foo")
-    }).count()
-    val trainMSE  = trainLabelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()/3
-    println("Train Mean Squared Error = " + trainMSE)
-
-    testLabelsAndPredictions.mapPartitionsWithIndex( (i, p) => {
-      println("save:")
-      NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/test/" + i, p, dimensions_test(i), s.toString
-        /*,indexesAndGrads*/ )
-      Iterator("foo")
-    }).count()
-    val testMSE  = testLabelsAndPredictions.map { case (v, p) => (v-p).sq}.mean()/3
-    println("Test Mean Squared Error = " + testMSE)
   }
 
 
@@ -107,7 +125,7 @@ object Main {
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
 
-      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im2/split_2"),
+      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = m.getOrElse("subvolumes",    "000").split(","),
@@ -119,7 +137,7 @@ object Main {
       nTrees        = m.getOrElse("nTrees",        "50").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
-      trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
+      trainFraction = m.getOrElse("trainFraction", "0.1").toDouble,
       mode          = m.getOrElse("mode", "RandomForest")
     )
   }

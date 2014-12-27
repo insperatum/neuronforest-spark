@@ -33,7 +33,7 @@ object NeuronUtils {
     getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, offsets.length)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
   }
 
-  def loadData(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
+  def loadDataCached(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
                maxBins:Int, offsets:Seq[(Int, Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
     val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
       val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
@@ -63,7 +63,7 @@ object NeuronUtils {
       d
     })
     rawFeaturesData.unpersist()
-    (data, dimensions.collect())
+    (cached(data), dimensions.collect())
   }
 
 
