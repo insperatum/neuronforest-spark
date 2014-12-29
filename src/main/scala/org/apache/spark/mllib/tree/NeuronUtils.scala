@@ -19,11 +19,18 @@ import scala.reflect.ClassTag
 object NeuronUtils {
 
   def cached[T: ClassTag](rdd:RDD[T]) = { //todo: add unpersist!
-    rdd.mapPartitions(p =>
+    val sc = rdd.sparkContext
+    val nCached = sc.getRDDStorageInfo.length
+    val cachedRDD = rdd.mapPartitions(p =>
       Iterator(p.toSeq)
     ).cache().mapPartitions(p =>
       p.next().toIterator
     )
+    cachedRDD.count() // force computation
+
+    if(sc.getRDDStorageInfo.length == nCached)
+      throw new Exception("Did not have enough memory to cache " + rdd + "! Failing.")
+    cachedRDD
   }
 
   def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int, Int)]) = {
