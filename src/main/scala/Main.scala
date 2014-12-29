@@ -8,6 +8,7 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
 import org.apache.spark.mllib.tree.{MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
 import org.apache.spark.mllib.tree.configuration.{MyBoostingStrategy, MyStrategy, Strategy}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.mllib.tree.impurity.{Gini, Entropy, MyImpurity, MyImpurities}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
@@ -28,7 +29,6 @@ object Main {
     val sc = new SparkContext(conf)
 
 
-
     //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
     val (train, dimensions_train) = NeuronUtils.loadDataCached(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
@@ -41,7 +41,7 @@ object Main {
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
     } else if (s.mode == "MALIS") {
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 10, math.pow(20, -6) * 2)
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 10, math.pow(20, -6) * 2 * s.malisGrad)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
@@ -115,7 +115,7 @@ object Main {
 
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
-                         dimOffsets:Seq[Int], master:String, trainFraction:Double, mode:String)
+                         dimOffsets:Seq[Int], master:String, trainFraction:Double, mode:String, malisGrad:Double)
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
     println("Called with args:")
@@ -137,8 +137,9 @@ object Main {
       nTrees        = m.getOrElse("nTrees",        "50").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
-      trainFraction = m.getOrElse("trainFraction", "0.1").toDouble,
-      mode          = m.getOrElse("mode", "RandomForest")
+      trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
+      mode          = m.getOrElse("mode", "MALIS"),
+      malisGrad     = m.getOrElse("malisGrad",     "1").toDouble
     )
   }
 }
