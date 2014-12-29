@@ -7,9 +7,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5a22058b-ce31-4b79-8a24-3338eadf92a6" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/Main.scala" afterPath="$PROJECT_DIR$/src/main/scala/Main.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/evaluate_predictions.m" afterPath="$PROJECT_DIR$/evaluate_predictions.m" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/make_training_data.py" afterPath="$PROJECT_DIR$/make_training_data.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -76,7 +74,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="NeuronUtils.scala" pinned="false" current-in-tab="true">
+      <file leaf-file-name="NeuronUtils.scala" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/NeuronUtils.scala">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.21341464" vertical-offset="135" max-vertical-offset="2835">
@@ -86,7 +84,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MalisLoss.scala" pinned="false" current-in-tab="false">
+      <file leaf-file-name="MalisLoss.scala" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/mllib/tree/loss/MalisLoss.scala">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0" vertical-offset="2240" max-vertical-offset="3105">
@@ -727,7 +725,19 @@
       <option name="project" value="LOCAL" />
       <updated>1419702111126</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Throw error when caching and rdd that doesn't fit in memory">
+      <created>1419811559968</created>
+      <option name="number" value="00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1419811559968</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Argument for choosing gradient boosting step">
+      <created>1419811605872</created>
+      <option name="number" value="00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1419811605872</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -772,6 +782,8 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
+    <option name="CHECK_NEW_TODO" value="false" />
     <option name="myTodoPanelSettings">
       <TodoPanelSettings />
     </option>
@@ -779,7 +791,9 @@
     <MESSAGE value="Update idea project to output artifacts" />
     <MESSAGE value="Many Bugfixes for MALIS. TODO: Optimize + remove printlns" />
     <MESSAGE value="Save intermediate predictions for ensemble models" />
-    <option name="LAST_COMMIT_MESSAGE" value="Save intermediate predictions for ensemble models" />
+    <MESSAGE value="Throw error when caching and rdd that doesn't fit in memory" />
+    <MESSAGE value="Argument for choosing gradient boosting step" />
+    <option name="LAST_COMMIT_MESSAGE" value="Argument for choosing gradient boosting step" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

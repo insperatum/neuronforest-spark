@@ -89,34 +89,35 @@ object MalisLoss extends MyLoss {
   }
 
   def segForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double3)], indexer:Indexer3D):Array[Int] = {
-    println("Seg for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
+    print("Seg for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
+    val t = System.currentTimeMillis()
+
     val pointsAndLabels = pointsAndPreds.map{case (p, a) => (p, p.label)} //todo: this is a complete waste
 
     val genSeg: Int => Int = kruskals(pointsAndLabels, indexer, edgeFilter = _.weight == 1)._3
     val seg = Array.tabulate[Int](indexer.size)(genSeg)
+    println(" (took " + (System.currentTimeMillis() - t) + "ms)")
     seg
   }
 
   def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double3)], indexer:Indexer3D) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
 
-    println("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
+    print("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
+    val t = System.currentTimeMillis()
     val gradients = new ArrayBuffer[(MyTreePoint, Double3)]()
 
-    var e:Edge = null //todo: all this shit can go once I've got good pictures
-    var c:Array[IndexedSeq[Int]] = null
-    var af:Int = 0
-    var at:Int = 0
-    var df:Map[Int, IndexedSeq[Int]] = null
-    var dt:Map[Int, IndexedSeq[Int]] = null
+    //todo: all this shit can go once I've got good pictures
+    var df:Map[Int, Seq[Int]] = null
+    var dt:Map[Int, Seq[Int]] = null
     var d:Int = Int.MaxValue
 
-    def innerFunc(edge:Edge, children:Array[IndexedSeq[Int]], ancFrom:Int, ancTo:Int) = {
+    def innerFunc(edge:Edge, descendants:Int => Seq[Int], ancFrom:Int, ancTo:Int) = {
       //println("Adding wedge with weight " + edge.weight)
-      def getDescendants(nodeIdx:Int):IndexedSeq[Int] = children(nodeIdx).flatMap(getDescendants) :+ nodeIdx
 
-      val descFrom = getDescendants(ancFrom).groupBy(seg)
-      val descTo = getDescendants(ancTo).groupBy(seg)
+
+      val descFrom = descendants(ancFrom).groupBy(seg)
+      val descTo = descendants(ancTo).groupBy(seg)
       val del = ( for((segFrom, subsetFrom) <- descFrom;
                       (segTo, subsetTo) <- descTo) yield
           subsetFrom.size * subsetTo.size * (if(segFrom == segTo && segFrom != 0) 1 else -1)
@@ -129,10 +130,6 @@ object MalisLoss extends MyLoss {
       }))
 
       if(del < d) {
-        e = edge
-        c = children
-        af = ancFrom
-        at = ancTo
         df = descFrom
         dt = descTo
         d = del
@@ -148,14 +145,12 @@ object MalisLoss extends MyLoss {
       p -> s.map(_._2).reduce(_+_)
     }
 
+    println(" (took " + (System.currentTimeMillis() - t) + "ms)")
     (grads, d, df_out, dt_out)
   }
 
-
-  def doNothing(e:Edge, a:Array[IndexedSeq[Int]], i1:Int, i2:Int) = {}
-
   def kruskals(pointsAndAffs: Array[(MyTreePoint, Double3)], indexer:Indexer3D, edgeFilter:Edge => Boolean = _ => true,
-               innerFunc:(Edge, Array[IndexedSeq[Int]], Int, Int) => Unit = doNothing)
+               innerFunc:(Edge, Int=>Seq[Int], Int, Int) => Unit = (_, _, _, _) => {})
   :(Array[IndexedSeq[Int]], Array[Int], Int => Int) = {
 
     val edgeList = (0 until indexer.size).flatMap( i => { // i is an INNER index
@@ -182,19 +177,26 @@ object MalisLoss extends MyLoss {
         if(parent(nodeIdx) == nodeIdx) nodeIdx else getAncestor(parent(nodeIdx))
     }
 
+    val descendants = Array.tabulate[Vector[Int]](indexer.size){ i => Vector(i)}
+    //def getDescendants(nodeIdx:Int):IndexedSeq[Int] = children(nodeIdx).flatMap(getDescendants) :+ nodeIdx
+
     var numEdges = 0
     while(numEdges < indexer.size-1 && edges.nonEmpty) {
       val edge = edges.dequeue()
       val ancFrom = getAncestor(edge.from)
       val ancTo = getAncestor(edge.to)
       if(ancFrom != ancTo) {
-        innerFunc(edge, children, ancFrom, ancTo)
-        if(children(ancFrom).size > children(ancTo).size) {
+        innerFunc(edge, descendants, ancFrom, ancTo)
+        if(descendants(ancFrom).size > descendants(ancTo).size) {
           parent(ancTo) = ancFrom
           children(ancFrom) = children(ancFrom) :+ ancTo
+          descendants(ancFrom) = descendants(ancFrom) ++ descendants(ancTo)
+          descendants(ancTo) == Vector[Int]()
         } else {
           parent(ancFrom) = ancTo
           children(ancTo) = children(ancTo) :+ ancFrom
+          descendants(ancTo) = descendants(ancTo) ++ descendants(ancFrom)
+          descendants(ancFrom) == Vector[Int]()
         }
         numEdges = numEdges + 1
       }
