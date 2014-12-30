@@ -40,7 +40,7 @@ object MalisLoss extends MyLoss {
     val subvolume_size = 20
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
-    var dMax = Int.MaxValue //todo:remove
+    var dMax = Double.MaxValue //todo:remove
     var df:Iterable[Int] = null //
     var dt:Iterable[Int] = null //
 
@@ -102,6 +102,7 @@ object MalisLoss extends MyLoss {
 
   def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double3)], indexer:Indexer3D) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
+    val scaleFactor = 2d / (indexer.size * indexer.size-1)
 
     print("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
@@ -110,23 +111,26 @@ object MalisLoss extends MyLoss {
     //todo: all this shit can go once I've got good pictures
     var df:Map[Int, Seq[Int]] = null
     var dt:Map[Int, Seq[Int]] = null
-    var d:Int = Int.MaxValue
+    var d:Double = Double.MaxValue
 
     def innerFunc(edge:Edge, descendants:Int => Seq[Int], ancFrom:Int, ancTo:Int) = {
       //println("Adding wedge with weight " + edge.weight)
 
+      val trueAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._1.label
+      val predAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._2
 
       val descFrom = descendants(ancFrom).groupBy(seg)
       val descTo = descendants(ancTo).groupBy(seg)
       val del = ( for((segFrom, subsetFrom) <- descFrom;
                       (segTo, subsetTo) <- descTo) yield
-          subsetFrom.size * subsetTo.size * (if(segFrom == segTo && segFrom != 0) 1 else -1)
-        ).reduce(_+_)
+          subsetFrom.size * subsetTo.size *
+            (if(segFrom == segTo && segFrom != 0) 1 else -1)
+        ).reduce(_+_) * scaleFactor
 
       gradients.append(edge.point -> (edge.dir match {
-        case 1 => Double3(del, 0, 0)
-        case 2 => Double3(0, del, 0)
-        case 3 => Double3(0, 0, del)
+        case 1 => Double3(del * (trueAffs._1 - predAffs._1), 0, 0)
+        case 2 => Double3(0, del * (trueAffs._2 - predAffs._2), 0)
+        case 3 => Double3(0, 0, del * (trueAffs._3 - predAffs._3))
       }))
 
       if(del < d) {
