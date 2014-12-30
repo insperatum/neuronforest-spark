@@ -18,19 +18,23 @@ import scala.reflect.ClassTag
 
 object NeuronUtils {
 
-  def cached[T: ClassTag](rdd:RDD[T]) = { //todo: add unpersist!
+  def cached[T: ClassTag](rdd:RDD[T]): (RDD[T], Unit => Unit) = { //todo: add unpersist!
+    println("Caching " + rdd)
     val sc = rdd.sparkContext
     val nCached = sc.getRDDStorageInfo.length
     val cachedRDD = rdd.mapPartitions(p =>
       Iterator(p.toSeq)
-    ).cache().mapPartitions(p =>
+    ).cache()
+
+    val newRDD = cachedRDD.mapPartitions(p =>
       p.next().toIterator
     )
     cachedRDD.count() // force computation
 
     if(sc.getRDDStorageInfo.length == nCached)
       throw new Exception("Did not have enough memory to cache " + rdd + "! Failing.")
-    cachedRDD
+
+    (newRDD, _ => cachedRDD.unpersist())
   }
 
   def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int, Int)]) = {
@@ -40,7 +44,7 @@ object NeuronUtils {
     getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, offsets.length)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
   }
 
-  def loadDataCached(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
+  def loadData(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
                maxBins:Int, offsets:Seq[(Int, Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
     val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
       val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
@@ -70,7 +74,7 @@ object NeuronUtils {
       d
     })
     rawFeaturesData.unpersist()
-    (cached(data), dimensions.collect())
+    (data, dimensions.collect())
   }
 
 

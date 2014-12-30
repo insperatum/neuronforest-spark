@@ -28,10 +28,9 @@ object Main {
     if (!s.master.isEmpty) conf.setMaster(s.master)
     val sc = new SparkContext(conf)
 
-
     //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadDataCached(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
+    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
@@ -41,7 +40,7 @@ object Main {
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
     } else if (s.mode == "MALIS") {
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 10, math.pow(20, -6) * 2 * s.malisGrad)
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 10, s.malisGrad)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
@@ -56,7 +55,7 @@ object Main {
 
 
     //-------------------------- Test ---------------------------------------
-    val (test, dimensions_test) = NeuronUtils.loadDataCached(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
+    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
     val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
 
     val allPartialModels:Seq[MyEnsembleModel[_]] = model.getPartialModels

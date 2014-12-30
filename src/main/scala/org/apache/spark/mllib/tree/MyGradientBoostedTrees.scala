@@ -160,7 +160,7 @@ object MyGradientBoostedTrees extends Logging {
 //    if (input.getStorageLevel == StorageLevel.NONE) {
 //      //input.persist(StorageLevel.MEMORY_AND_DISK) //todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
 //    }
-    val input = cached(uncachedInput)
+    val (input, unpersistInput) = cached(uncachedInput)
 
     timer.stop("init")
 
@@ -191,8 +191,8 @@ object MyGradientBoostedTrees extends Logging {
 
     import math.abs
     //data.map(d => (d.idx, d.label)).take(10).foreach(println)
-    println(data.map(d => abs(d.label._1) + abs(d.label._2) + abs(d.label._3)).reduce(_+_))
-    println(input.count())
+    //println(data.map(d => abs(d.label._1) + abs(d.label._2) + abs(d.label._3)).reduce(_+_))
+    //println(input.count())
     var m = 1
     while (m < numIterations) {
       timer.start(s"building tree $m")
@@ -215,13 +215,18 @@ object MyGradientBoostedTrees extends Logging {
       // Update data with pseudo-residuals
 //      data = input.map(point => MyLabeledPoint(loss.gradient(partialModel, point) * -1,
 //        point.features))
-      data = loss.gradient(partialModel, input).map{ case (p, grad) => {
-        p.copy(label = grad)
-      }}
+
 
       m += 1
-    }
 
+      if(m < numIterations) {
+        data = loss.gradient(partialModel, input).map { case (p, grad) => {
+          p.copy(label = grad)
+        }}
+      }
+
+    }
+    unpersistInput()
     timer.stop("total")
 
     logInfo("Internal timing for MyDecisionTree:")

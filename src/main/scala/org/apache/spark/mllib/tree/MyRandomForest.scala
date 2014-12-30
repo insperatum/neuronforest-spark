@@ -171,7 +171,7 @@ private class MyRandomForest (
       }
     }
 
-    val baggedInput
+    val (baggedInput, unpersistInput)
       = cached(BaggedPoint.convertToBaggedRDD(treeInput, subsample, numTrees, withReplacement, seed))
 
     // depth of the decision tree
@@ -246,7 +246,7 @@ private class MyRandomForest (
       timer.stop("findBestSplits")
     }
 
-    baggedInput.unpersist()
+    unpersistInput()
 
     timer.stop("total")
 
