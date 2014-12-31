@@ -61,8 +61,8 @@ case class MyBoostingStrategy(
           s"BoostingStrategy given invalid algo parameter: ${forestStrategy.algo}." +
             s"  Valid settings are: Classification, Regression.")
     }
-    require(learningRate > 0 && learningRate <= 1,
-      "Learning rate should be in range (0, 1]. Provided learning rate is " + s"$learningRate.")
+//    require(learningRate > 0 && learningRate <= 1,
+//      "Learning rate should be in range (0, 1]. Provided learning rate is " + s"$learningRate.")
   }
 }
 
