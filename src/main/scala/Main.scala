@@ -60,6 +60,8 @@ object Main {
 
     val allPartialModels:Seq[MyEnsembleModel[_]] = model.getPartialModels
 
+    val (train_cached, _) = NeuronUtils.cached(train)
+    val (test_cached, _) = NeuronUtils.cached(test)
     var partialIndex = 0
     while(partialIndex < allPartialModels.size) { // If I use a for loop then the compiler does some optimization and all hell breaks loos
       val partialModel = allPartialModels(partialIndex)
@@ -68,7 +70,7 @@ object Main {
       println("\nTesting partial model with " + nElems + " elements")
 
       // Training Error
-      val trainLabelsAndPredictions = train.map { point =>
+      val trainLabelsAndPredictions = train_cached.map { point =>
         val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
         val prediction = partialModel.predict(Vectors.dense(features))
         (point.label, prediction)
@@ -84,7 +86,7 @@ object Main {
       trainLabelsAndPredictions.unpersist()
 
       // Test Error
-      val testLabelsAndPredictions = test.map { point =>
+      val testLabelsAndPredictions = test_cached.map { point =>
         val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
         val prediction = partialModel.predict(Vectors.dense(features))
         (point.label, prediction)
