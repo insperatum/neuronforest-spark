@@ -1,8 +1,6 @@
 import numpy as np
 from scipy import ndimage, misc, io
-from matplotlib import pyplot
 import os
-import h5py
 
 def makeFeatures(img, filename, min_idx=None, max_idx=None):
     if min_idx is None:
@@ -69,23 +67,24 @@ def get_target_affinities(seg, idxs):
 
 # --------------------------------------------------
 
-def makeData(numSplit=1, margin=15, numImages=1):
+def makeData(numSplit=(1, 1, 1), margin=15, imageNums=[1], toPath="masters_data/spark"):
     print "Loading Helmstaedter2013 data"
-    Helmstaedter2013 = io.loadmat("/masters_data/Helmstaedter.mat")
+    Helmstaedter2013 = io.loadmat("Helmstaedter.mat")
     if not os.path.exists("data"): os.mkdir("data")
-    for i in range(0, numImages):
-        print("\nSplitting im" + str(i+1)+ " into " + str(numSplit) + "^3 different subvolumes".format())
+    for q in imageNums:
+    	i = q-1
+        print("\nSplitting im" + str(i+1)+ " into " + str(numSplit) + " different subvolumes".format())
         bounds = Helmstaedter2013["boundingBox"][0, i]
         outer_min_idx = np.maximum(bounds[:, 0], margin)
         outer_max_idx = np.minimum(bounds[:, 1]-1, np.array(Helmstaedter2013["im"][0,i].shape) - margin-1) # -1 because no affinity on faces
         box_size = (outer_max_idx - outer_min_idx + 1)/numSplit
-        mainfolder = "/masters_data/spark/im" + str(i+1)
+        mainfolder = toPath + "/im" + str(i+1)
         if not os.path.exists(mainfolder ): os.mkdir(mainfolder )
-        mainfolder  = mainfolder  + "/split_" + str(numSplit)
+        mainfolder  = mainfolder  + "/split_" + str(numSplit[0]) + str(numSplit[1]) + str(numSplit[2])
         if not os.path.exists(mainfolder ): os.mkdir(mainfolder )
-        for box_x in range(numSplit):
-            for box_y in range(numSplit):
-                for box_z in range(numSplit):
+        for box_x in range(numSplit[0]):
+            for box_y in range(numSplit[1]):
+                for box_z in range(numSplit[2]):
                     print("-------------\nCreating sub-volume " + str(box_x) + ", " + str(box_y) + ", " + str(box_z))
                     box_offset = box_size * [box_x, box_y, box_z]
                     folder = mainfolder + "/" + str(box_x) + str(box_y) + str(box_z)
@@ -104,4 +103,5 @@ def makeData(numSplit=1, margin=15, numImages=1):
                     makeFeatures(Helmstaedter2013["im"][0, i], folder + "/features", box_min_margin, box_max_margin)
                     makeDimensions(shape, folder + "/dimensions",  box_min_relative, box_max_relative)
 
-makeData(numSplit=2, numImages=12)
+makeData(numSplit=(1, 1, 1), imageNums=[1,2,3,4], toPath="data")
+makeData(numSplit=(1, 2, 2), imageNums=[5,6,7,8,9,10,11,12], toPath="data")
