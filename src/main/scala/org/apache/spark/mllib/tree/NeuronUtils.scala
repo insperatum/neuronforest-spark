@@ -1,7 +1,8 @@
 package org.apache.spark.mllib.tree
 
 import java.io
-import java.io.FileWriter
+import java.io.{RandomAccessFile, FileWriter}
+import java.nio.{FloatBuffer, ByteBuffer}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
@@ -50,7 +51,6 @@ object NeuronUtils {
       val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
       Seq(new RawFeatureData(features_file, nBaseFeatures)).toIterator
     })
-    rawFeaturesData.cache()
 
     val dimensions = getDimensions(sc, data_root, subvolumes, proportion, fromFront)
     val data = rawFeaturesData.zip(dimensions).mapPartitionsWithIndex((i, p) => {
@@ -73,7 +73,6 @@ object NeuronUtils {
       println("creating partition data took " + (System.currentTimeMillis() - startTime) + " ms")
       d
     })
-    rawFeaturesData.unpersist()
     (data, dimensions.collect())
   }
 
@@ -172,27 +171,44 @@ object NeuronUtils {
     fwdescription.write(description)
     fwdescription.close()
 
-
     val fwdimensions = new FileWriter(path + "/dimensions.txt", false)
     import dimensions.{min_idx, max_idx}
     val dims = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
     fwdimensions.write(dims._1 + " " + dims._2 + " " + dims._3)
     fwdimensions.close()
 
-    val fwlabels = new FileWriter(path + "/labels.txt", false)
+    /*val fwlabels = new FileWriter(path + "/labels.txt", false)
     val fwpredictions = new FileWriter(path + "/predictions.txt", false)
     labelsAndPredictions.foreach{ case (label, prediction) => {
       fwlabels.write(label._1 + " " + label._2 + " " + label._3 + "\n")
       fwpredictions.write(prediction._1 + " " + prediction._2 + " " + prediction._3 + "\n")
     }}
     fwlabels.close()
-    fwpredictions.close()
+    fwpredictions.close()*/
+
+    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel
+    val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
+    val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
+    val floatBuffer =  byteBuffer.asFloatBuffer()
+    labelsAndPredictions.foreach{ case (label, prediction) =>
+      Seq(label._1, label._2, label._3).foreach(d => floatBuffer.put(d.toFloat))
+      fclabels.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+      Seq(prediction._1, prediction._2, prediction._3).foreach(d => floatBuffer.put(d.toFloat))
+      fcpredictions.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+    }
+    fclabels.close()
+    fcpredictions.close()
+
 
     if(indexesAndGrads != null) {
       val fwgrads = new FileWriter(path + "/gradients.txt", false)
-      indexesAndGrads.foreach{ case (idx, grad) => {
+      indexesAndGrads.foreach{ case (idx, grad) =>
         fwgrads.write(idx + " " + grad._1 + " " + grad._2 + " " + grad._3 + "\n")
-      }}
+      }
       fwgrads.close()
     }
 

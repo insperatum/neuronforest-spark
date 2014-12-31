@@ -1,4 +1,4 @@
-function evaluate_predictions(files)
+function evaluate_predictions(files) 
     thresholds = 0:0.01:1;
     [r_err, r_tp, r_fp, r_pos, r_neg, p_err, p_tp, p_fp, p_pos, p_neg, p_sqerr] = get_stats(files{1}, thresholds);
     for i=2:length(files)
@@ -63,8 +63,14 @@ end
 
 function [r_err, r_tp, r_fp, r_pos, r_neg, p_err, p_tp, p_fp, p_pos, p_neg, p_sqerr] = get_stats(file, thresholds)
     load([file '/dimensions.txt']);
-    load([file '/labels.txt']);
-    load([file '/predictions.txt']);
+    fid = fopen([file '/labels.raw'], 'r', 'ieee-be');
+    labels = fread(fid, 3*prod(dimensions), 'float');
+    fclose(fid);
+    fid = fopen([file '/predictions.raw'], 'r', 'ieee-be');
+    predictions = fread(fid, 3*prod(dimensions), 'float');
+    fclose(fid);
+    %load([file '/labels.txt']);
+    %load([file '/predictions.txt']);
 
     flip_aff = @(M) M(end:-1:1, end:-1:1, end:-1:1, :);
     % FILE IS IN ROW MAJOR ORDER, BUT MATLAB USES COLUMN MAJOR ORDER
@@ -122,6 +128,6 @@ function [r_err, r_tp, r_fp, r_pos, r_neg, p_err, p_tp, p_fp, p_pos, p_neg, p_sq
         
         p_pos = sum(affTrue(:));
         p_neg = sum(~affTrue(:));
-        fprintf('Threshold = %f, Rand Error = %f, Pixel Error = %f\n', threshold, 1-ri, pixelError)
+        %fprintf('Threshold = %f, Rand Error = %f, Pixel Error = %f\n', threshold, 1-ri, pixelError)
     end
 end
