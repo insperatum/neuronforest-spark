@@ -18,7 +18,6 @@ object Main {
 
   def main(args:Array[String]) {
     //------------------------ Init ---------------------------------------
-
     val s = getSettingsFromArgs(args)
     println("Settings:\n" + s.toVerboseString)
 
@@ -27,6 +26,9 @@ object Main {
     val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false")
     if (!s.master.isEmpty) conf.setMaster(s.master)
     val sc = new SparkContext(conf)
+
+    val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
+    val save_to = s.save_to + "/" + timestr
 
     //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
@@ -44,7 +46,7 @@ object Main {
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-        dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
+        dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy, save_to + "/gradients")
 
     } /*else {
       println(s.mode + " is not a valid mode!")
@@ -56,7 +58,6 @@ object Main {
 
     //-------------------------- Test ---------------------------------------
     val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
-    val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
 
     val allPartialModels:Seq[MyEnsembleModel[_]] = model.getPartialModels
 
@@ -78,7 +79,7 @@ object Main {
       println("Saving...")
       if(trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
         println("save:")
-        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toVerboseString
+        NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toVerboseString
           /*,indexesAndGrads*/)
         Iterator("foo")
       }).count() != s.subvolumes.length) {
@@ -98,7 +99,7 @@ object Main {
       println("Saving...")
       if(testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
         println("save:")
-        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toVerboseString
+        NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toVerboseString
           /*,indexesAndGrads*/)
         Iterator("foo")
       }).count() != s.subvolumes.length) {
@@ -159,7 +160,7 @@ object Main {
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = {
-        val str = m.getOrElse("subvolumes",    "000")
+        val str = m.getOrElse("subvolumes",    "001")
         val idx = str.indexOf("*")
         if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
         else str.split(",")
@@ -174,7 +175,7 @@ object Main {
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
       malisGrad     = m.getOrElse("malisGrad",     "1").toDouble,
-      iterations = m.getOrElse("iterations", "1").toInt
+      iterations = m.getOrElse("iterations", "2").toInt
     )
   }
 }

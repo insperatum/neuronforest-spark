@@ -66,8 +66,8 @@ object NeuronUtils {
       val d = targets.zipWithIndex.map { case (ts, idx) =>
         val y = Double3(ts(0), ts(1), ts(2))
         val seg = ts(3).toInt
-        val example_idx = indexer.innerToOuter(idx)
-        new MyTreePoint(y, seg, binnedFeatureData, example_idx)
+        val outer_idx = indexer.innerToOuter(idx)
+        new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
       }
 
       println("creating partition data took " + (System.currentTimeMillis() - startTime) + " ms")
@@ -149,16 +149,42 @@ object NeuronUtils {
   }
 
 
-  def saveSeg(path:String, seg:Iterator[(Int, Int)]): Unit = {
-    println("Saving seg: " + path)
+  def saveSeg(path:String, filename:String, seg:Array[Int]): Unit = {
+    println("Saving seg: " + path + "/" + filename)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
 
-    val fwseg = new FileWriter(path + "/seg.txt", false)
-    seg.foreach{ case (idx, seg) => {
-      fwseg.write(idx + " " + seg + "\n")
-    }}
-    fwseg.close()
+    val fcseg = new RandomAccessFile(path + "/" + filename, "rw").getChannel
+    val byteBuffer = ByteBuffer.allocate(4) //must be multiple of 4 for ints
+    val intBuffer =  byteBuffer.asIntBuffer()
+    seg.foreach{ case (s) =>
+      intBuffer.put(s)
+      fcseg.write(byteBuffer)
+      byteBuffer.rewind()
+      intBuffer.clear()
+    }
+    fcseg.close()
+  }
+
+  def save3D(path:String, filename:String, that:Array[Double3], dims:(Int, Int, Int)): Unit = {
+    println("Saving 3D: " + path + "/" + filename)
+    val dir =  new io.File(path)
+    if(!dir.exists) dir.mkdirs()
+
+    val fwdims = new FileWriter(path + "/dims.txt", false)
+    fwdims.write(dims._1 + " " + dims._2 + " " + dims._3)
+    fwdims.close()
+
+    val fc = new RandomAccessFile(path + "/" + filename, "rw").getChannel
+    val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
+    val floatBuffer =  byteBuffer.asFloatBuffer()
+    that.foreach { d3 =>
+      Seq(d3._1, d3._2, d3._3).foreach(d => floatBuffer.put(d.toFloat))
+      fc.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+    }
+    fc.close()
   }
 
   def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions,
@@ -186,7 +212,7 @@ object NeuronUtils {
     fwlabels.close()
     fwpredictions.close()*/
 
-    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel
+    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
     val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
     val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
     val floatBuffer =  byteBuffer.asFloatBuffer()

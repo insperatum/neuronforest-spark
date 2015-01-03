@@ -82,8 +82,9 @@ class MyGradientBoostedTrees(private val boostingStrategy: MyBoostingStrategy)
           numExamples:Int,
           splits:Array[Array[Split]],
           bins:Array[Array[Bin]],
-          featureSubsetStrategy:String = "all") = {
-    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, featureSubsetStrategy)
+          featureSubsetStrategy:String = "all",
+          save_gradients_to:String = null) = {
+    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, featureSubsetStrategy, save_gradients_to)
   }
 
 
@@ -135,7 +136,8 @@ object MyGradientBoostedTrees extends Logging {
       numExamples:Int,
       splits:Array[Array[Split]],
       bins:Array[Array[Bin]],
-      featureSubsetStrategy:String = "all") = {
+      featureSubsetStrategy:String = "all",
+      save_gradients_to:String = null) = {
 
     val timer = new TimeTracker()
     timer.start("total")
@@ -184,7 +186,7 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("building tree 0")
 
     // psuedo-residual for second iteration
-    data = loss.gradient(startingModel, input).map{ case (p, grad) => {
+    data = loss.gradient(startingModel, input, save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
       p.copy(label = grad)
     }}
 //    val seg = MalisLoss.segment(startingModel, input) //todo: get rid of this
@@ -220,7 +222,7 @@ object MyGradientBoostedTrees extends Logging {
       m += 1
 
       if(m < numIterations) {
-        data = loss.gradient(partialModel, input).map { case (p, grad) => {
+        data = loss.gradient(partialModel, input, save_gradients_to + "/" + "gradient" + m).map { case (p, grad) => {
           p.copy(label = grad)
         }}
       }

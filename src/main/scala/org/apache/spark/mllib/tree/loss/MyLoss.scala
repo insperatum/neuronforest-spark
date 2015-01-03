@@ -34,7 +34,8 @@ trait MyLoss extends Serializable {
 
   def gradient(
       model: MyModel,
-      points: RDD[MyTreePoint]): RDD[(MyTreePoint, Double3)]
+      points: RDD[MyTreePoint],
+      save_to:String = null): RDD[(MyTreePoint, Double3)]
 
   def computeError(model: MyModel, data: RDD[MyTreePoint]): Double
 

@@ -35,12 +35,15 @@ import org.apache.spark.rdd.RDD
  *      "Ordered categorical features" are categorical features with high arity,
  *      or any categorical feature used in regression or binary classification.
  */
-case class MyTreePoint(label: Double3, seg:Int, data:BinnedFeatureData, idx:Int)
+case class MyTreePoint(label: Double3, seg:Int, data:BinnedFeatureData, inner_idx:Int, outer_idx:Int)
+//Inner index is the index of the training example (within this partition)
+//Outer index is the index of the feature (in the featuredata)
+
   extends Serializable {
   def binnedFeatures(f:Int) = {
-    data.getBin(idx, f)
+    data.getBin(outer_idx, f)
   }
-  def features(f:Int) = data.getValue(idx, f)
+  def features(f:Int) = data.getValue(outer_idx, f)
   def getFeatureVector = Vectors.dense(Array.tabulate[Double](data.nFeatures)(features))
 }
 

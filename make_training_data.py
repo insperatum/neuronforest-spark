@@ -103,5 +103,5 @@ def makeData(numSplit=(1, 1, 1), margin=15, imageNums=[1], toPath="masters_data/
                     makeFeatures(Helmstaedter2013["im"][0, i], folder + "/features", box_min_margin, box_max_margin)
                     makeDimensions(shape, folder + "/dimensions",  box_min_relative, box_max_relative)
 
-makeData(numSplit=(1, 1, 1), imageNums=[1,2,3,4], toPath="data")
-makeData(numSplit=(1, 2, 2), imageNums=[5,6,7,8,9,10,11,12], toPath="data")
+makeData(numSplit=(2, 2, 2), imageNums=[1], toPath="data")
+#makeData(numSplit=(1, 2, 2), imageNums=[5,6,7,8,9,10,11,12], toPath="data")
