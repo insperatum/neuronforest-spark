@@ -62,7 +62,7 @@ object MalisLoss extends MyLoss {
       grads
     }
 
-    println("\n\nBEST delta WAS " + dMax + "\n\n")
+    println("\n\nLowest del was " + dMax + "\n\n")
 //    NeuronUtils.saveSeg("/home/luke/Documents/asdf1", df.map(_ -> 0).toIterator)
 //    NeuronUtils.saveSeg("/home/luke/Documents/asdf2", dt.map(_ -> 0).toIterator)
     submaps.reduce(_ ++ _)
@@ -102,7 +102,7 @@ object MalisLoss extends MyLoss {
 
   def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double3)], indexer:Indexer3D) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
-    val scaleFactor = 2d / (indexer.size * indexer.size-1)
+    val numPairs = (indexer.size * indexer.size-1) / 2
 
     print("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
@@ -111,26 +111,36 @@ object MalisLoss extends MyLoss {
     //todo: all this shit can go once I've got good pictures
     var df:Map[Int, Seq[Int]] = null
     var dt:Map[Int, Seq[Int]] = null
-    var d:Double = Double.MaxValue
+    var d:Double = Double.PositiveInfinity
 
     def innerFunc(edge:Edge, descendants:Int => Seq[Int], ancFrom:Int, ancTo:Int) = {
       //println("Adding wedge with weight " + edge.weight)
 
-      val trueAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._1.label
+      //val trueAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._1.label
       val predAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._2
+      val aff:Double = edge.dir match {
+        case 1 => predAffs._1
+        case 2 => predAffs._2
+        case 3 => predAffs._3
+      }
 
       val descFrom = descendants(ancFrom).groupBy(seg)
       val descTo = descendants(ancTo).groupBy(seg)
-      val del = ( for((segFrom, subsetFrom) <- descFrom;
-                      (segTo, subsetTo) <- descTo) yield
-          subsetFrom.size * subsetTo.size *
-            (if(segFrom == segTo && segFrom != 0) 1 else -1)
-        ).reduce(_+_) * scaleFactor
+      var nPos = 0
+      var nNeg = 0
+      for((segFrom, subsetFrom) <- descFrom;
+          (segTo, subsetTo) <- descTo) {
+        if(segFrom == segTo) nPos += subsetFrom.size * subsetTo.size
+        else nNeg += subsetFrom.size * subsetTo.size
+      }
+
+      val del = (nPos - aff*(nNeg + nPos))/numPairs
+
 
       gradients.append(edge.point -> (edge.dir match {
-        case 1 => Double3(del * (trueAffs._1 - predAffs._1), 0, 0)
-        case 2 => Double3(0, del * (trueAffs._2 - predAffs._2), 0)
-        case 3 => Double3(0, 0, del * (trueAffs._3 - predAffs._3))
+        case 1 => Double3(del, 0, 0)
+        case 2 => Double3(0, del, 0)
+        case 3 => Double3(0, 0, del)
       }))
 
       if(del < d) {
