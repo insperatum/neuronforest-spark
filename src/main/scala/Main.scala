@@ -20,7 +20,7 @@ object Main {
     //------------------------ Init ---------------------------------------
 
     val s = getSettingsFromArgs(args)
-    println("Settings:\n" + s)
+    println("Settings:\n" + s.toVerboseString)
 
     val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
     val nFeatures = s.nBaseFeatures * offsets.length
@@ -34,22 +34,22 @@ object Main {
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
-    val model: MyEnsembleModel[_] = if (s.mode == "RandomForest") {
+    val model: MyEnsembleModel[_] = /*if (s.mode == "RandomForest") {
       //    Random Forest
       MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
-    } else if (s.mode == "MALIS") {
+    } else if (s.mode == "MALIS") */{
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, 5, 10, s.malisGrad)
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.iterations, s.nTrees, s.malisGrad)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
         dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
 
-    } else {
+    } /*else {
       println(s.mode + " is not a valid mode!")
       ???
-    }
+    }*/
     println("trained.")
 
 
@@ -75,12 +75,16 @@ object Main {
         val prediction = partialModel.predict(Vectors.dense(features))
         (point.label, prediction)
       }.cache()
-      trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
+      println("Saving...")
+      if(trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
         println("save:")
-        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toString
+        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toVerboseString
           /*,indexesAndGrads*/)
         Iterator("foo")
-      }).count()
+      }).count() != s.subvolumes.length) {
+        println("Failed to save!")
+        return
+      }
       val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
       println("Train Mean Squared Error = " + trainMSE)
       trainLabelsAndPredictions.unpersist()
@@ -91,12 +95,16 @@ object Main {
         val prediction = partialModel.predict(Vectors.dense(features))
         (point.label, prediction)
       }.cache()
-      testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
+      println("Saving...")
+      if(testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
         println("save:")
-        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toString
+        NeuronUtils.saveLabelsAndPredictions(s.save_to + "/" + timestr + "/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toVerboseString
           /*,indexesAndGrads*/)
         Iterator("foo")
-      }).count()
+      }).count() != s.subvolumes.length) {
+        println("Failed to save!")
+        return
+      }
       val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
       println("Test Mean Squared Error = " + testMSE)
       testLabelsAndPredictions.unpersist()
@@ -109,6 +117,7 @@ object Main {
       else partialIndex = allPartialModels.size //break out of loop
     }
 
+    println("Job complete. Saved to: " + s.save_to + "/" + timestr)
   }
 
 
@@ -116,11 +125,31 @@ object Main {
 
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
-                         dimOffsets:Seq[Int], master:String, trainFraction:Double, mode:String, malisGrad:Double)
+                         dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
+                         iterations:Int) {
+
+    def toVerboseString =
+      "RunSettings:\n" +
+      " maxMemoryInMB = " + maxMemoryInMB + "\n" +
+      " data_root = "     + data_root + "\n" +
+      " save_to = "       + save_to + "\n" +
+      " subvolumes = "    + subvolumes.toList + "\n" +
+      " featureSubsetStrategy = "    + featureSubsetStrategy + "\n" +
+      " impurity = "    + impurity + "\n" +
+      " maxDepth = "    + maxDepth + "\n" +
+      " maxBins = "    + maxBins + "\n" +
+      " nBaseFeatures = "    + nBaseFeatures + "\n" +
+      " nTrees = "    + nTrees + "\n" +
+      " dimOffsets = "    + dimOffsets.toList + "\n" +
+      " master = "    + master + "\n" +
+      " trainFraction = "    + trainFraction + "\n" +
+      " malisGrad = "    + malisGrad + "\n" +
+      " iterations = "   + iterations
+  }
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
-    println("Called with args:")
-    args.foreach(println)
+//    println("Called with args:")
+//    args.foreach(println)
 
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
     RunSettings(
@@ -129,18 +158,23 @@ object Main {
       data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
-      subvolumes    = m.getOrElse("subvolumes",    "000").split(","),
+      subvolumes    = {
+        val str = m.getOrElse("subvolumes",    "000")
+        val idx = str.indexOf("*")
+        if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
+        else str.split(",")
+      },
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
       impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
       maxDepth      = m.getOrElse("maxDepth",      "14").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,
-      nTrees        = m.getOrElse("nTrees",        "50").toInt,
+      nTrees        = m.getOrElse("nTrees",        "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
-      mode          = m.getOrElse("mode", "MALIS"),
-      malisGrad     = m.getOrElse("malisGrad",     "1").toDouble
+      malisGrad     = m.getOrElse("malisGrad",     "1").toDouble,
+      iterations = m.getOrElse("iterations", "1").toInt
     )
   }
 }
