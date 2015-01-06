@@ -64,6 +64,10 @@ function evaluate_predictions(files, dims, description)
     saveas(plt, [files{1} '/../errors.png'], 'png');
     
     fclose(f);
+    
+    save([files{1} '/../errors.mat'], ...
+        'r_thresholds', 'r_err', 'r_tp', 'r_fp', 'r_pos', 'r_neg', ...
+        'p_thresholds', 'p_err', 'p_tp', 'p_fp', 'p_pos', 'p_neg', 'p_sqerr');
 end
 
 function saveAndPrint(varargin)
@@ -74,17 +78,29 @@ end
 
 function [thresholds, err, tp, fp, pos, neg, p_sqerr] = ...
 evaluate_thresholds(files, dims, thresholds, randOrPixel, min_step)
-    [err, tp, fp, pos, neg, p_sqerr] = get_stats(files{1}, thresholds, dims, randOrPixel);
-    for i=2:length(files)
-        fprintf('.');
-        [err_, tp_, fp_, pos_, neg_, ~] = get_stats(files{1}, thresholds, dims, randOrPixel);
-        err = err + err_;
-        tp = tp + tp_;
-        fp = fp + fp_;
-        pos = pos + pos_;
-        neg = neg + neg_;
+    err = zeros(length(files), length(thresholds));
+    tp = zeros(length(files), length(thresholds));
+    fp = zeros(length(files), length(thresholds));
+    pos = zeros(length(files), 1);
+    neg = zeros(length(files), 1);
+    p_sqerr = zeros(length(files), 1);
+    %[err, tp, fp, pos, neg, p_sqerr] = get_stats(files{1}, thresholds, dims, randOrPixel);
+    parfor i=1:length(files)
+        [err_, tp_, fp_, pos_, neg_, p_sqerr_] = get_stats(files{i}, thresholds, dims, randOrPixel);
+        err(i,:) = err_;
+        tp(i,:) = tp_;
+        fp(i,:) = fp_;
+        pos(i) = pos_;
+        neg(i) = neg_;
+        p_sqerr(i) = p_sqerr_;
     end
-    err = err / length(files);
+    err = sum(err) / length(files); % TODO WEIGHT BY NUMBER OF EXAMPLES
+    tp = sum(tp);
+    fp = sum(fp);
+    pos = sum(pos);
+    neg = sum(neg);
+    p_sqerr = sum(p_sqerr) / length(files); % TODO WEIGHT BY NUMBER OF EXAMPLES
+    
 
     step = thresholds(2) - thresholds(1);
     [best_err, idx] = min(err);

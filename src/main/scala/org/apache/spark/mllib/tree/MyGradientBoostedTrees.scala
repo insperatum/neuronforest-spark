@@ -186,7 +186,7 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("building tree 0")
 
     // psuedo-residual for second iteration
-    data = loss.gradient(startingModel, input, save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
+    data = loss.gradient(startingModel, input, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
       p.copy(label = grad)
     }}
 //    val seg = MalisLoss.segment(startingModel, input) //todo: get rid of this
@@ -222,7 +222,7 @@ object MyGradientBoostedTrees extends Logging {
       m += 1
 
       if(m < numIterations) {
-        data = loss.gradient(partialModel, input, save_gradients_to + "/" + "gradient" + m).map { case (p, grad) => {
+        data = loss.gradient(partialModel, input, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m).map { case (p, grad) => {
           p.copy(label = grad)
         }}
       }

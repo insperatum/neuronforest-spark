@@ -23,9 +23,9 @@ object MalisLoss extends MyLoss {
     })
 
     //make and save segs
-    if (save_to != null) {
-      segment(model, points, save_to).collect()
-    }
+//    if (save_to != null) {
+//      segment(model, points, save_to).collect()
+//    }
     g
   }
 

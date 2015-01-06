@@ -36,17 +36,17 @@ object Main {
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
-    val model: MyEnsembleModel[_] = /*if (s.mode == "RandomForest") {
+    val model: MyEnsembleModel[_] = if (s.iterations == 1) {
       //    Random Forest
       MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
-    } else if (s.mode == "MALIS") */{
+    } else {
       //    Gradient Boosting
       val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.iterations, s.nTrees, s.malisGrad)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-        dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy, save_to + "/gradients")
+        dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
 
     } /*else {
       println(s.mode + " is not a valid mode!")
@@ -111,9 +111,10 @@ object Main {
       testLabelsAndPredictions.unpersist()
 
 
-      // If ensemble is only size 5 include all partials. Otherwise include every fifth partial
-      if(model.nElems <= 5) partialIndex += 1
-      else if(partialIndex < allPartialModels.size - 6) partialIndex += 5
+      // If ensemble is only size 10 include all partials. Otherwise include ~5 partials
+      val step=allPartialModels.size/5
+      if(model.nElems <= 10) partialIndex += 1
+      else if(partialIndex < allPartialModels.size - step-1) partialIndex += step
       else if(partialIndex != allPartialModels.size-1) partialIndex = allPartialModels.size-1
       else partialIndex = allPartialModels.size //break out of loop
     }
@@ -127,7 +128,7 @@ object Main {
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
-                         iterations:Int) {
+                         iterations:Int, saveGradients:Boolean) {
 
     def toVerboseString =
       "RunSettings:\n" +
@@ -145,7 +146,8 @@ object Main {
       " master = "    + master + "\n" +
       " trainFraction = "    + trainFraction + "\n" +
       " malisGrad = "    + malisGrad + "\n" +
-      " iterations = "   + iterations
+      " iterations = "   + iterations + "\n" +
+      " saveGradients = " + saveGradients
   }
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
@@ -160,7 +162,7 @@ object Main {
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = {
-        val str = m.getOrElse("subvolumes",    "001")
+        val str = m.getOrElse("subvolumes",    "011")
         val idx = str.indexOf("*")
         if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
         else str.split(",")
@@ -175,7 +177,8 @@ object Main {
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
       malisGrad     = m.getOrElse("malisGrad",     "1").toDouble,
-      iterations = m.getOrElse("iterations", "2").toInt
+      iterations = m.getOrElse("iterations", "2").toInt,
+      saveGradients = m.getOrElse("saveGradients", "false").toBoolean
     )
   }
 }

@@ -1,5 +1,5 @@
 #MASTER
-MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master NAME | tail -1`
+	MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master NAME | tail -1`
 
 
 #download all data onto workers
@@ -66,13 +66,9 @@ im12/split_122/000
 im12/split_122/001
 im12/split_122/010
 im12/split_122/011)
-(echo $MASTER && ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (for v in ${volumes[0]} ${volumes[@]}; do
-	read line; ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line "source aws_credentials.sh && /root/.local/lib/aws/bin/aws s3 cp s3://neuronforest.sparkdata/$v /mnt/data --recursive" &
-done)
-
-(echo $MASTER && ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (for v in ${volumes[0]} ${volumes[@]}; do
+(echo $MASTER && ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (tasks=""; for v in ${volumes[0]} ${volumes[@]}; do
 	read line; ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp s3://neuronforest.sparkdata/$v /mnt/data --recursive" &
-done)
+tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
 
 #copy predictions to s3
 (ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (while read line; do
@@ -90,6 +86,7 @@ aws s3 sync s3://neuronforest.sparkdata/predictions /masters_predictions/s3
 
 
 
+#NAME
 volumes=(
 im1/split_112/000
 im1/split_112/001
@@ -99,3 +96,43 @@ im3/split_112/000
 im3/split_112/001
 im4/split_111/000
 )
+
+#CLUSTER18
+volumes=(
+im1/split_111/000
+im2/split_111/000
+im5/split_112/000
+im5/split_112/001
+im6/split_112/000
+im6/split_112/001
+im7/split_112/000
+im7/split_112/001
+im8/split_112/000
+im8/split_112/001
+im9/split_112/000
+im9/split_112/001
+im10/split_112/000
+im10/split_112/001
+im11/split_112/000
+im11/split_112/001
+im12/split_112/000
+im12/split_112/001
+)
+
+
+
+
+
+#RUN, COPY, DELETE:
+set +H
+
+~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=1 iterations=4
+
+(cat ~/spark-ec2/slaves) | (tasks=""; while read line; do
+	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp /masters_predictions/ s3://neuronforest.sparkdata/predictions --recursive" &
+tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
+
+
+(cat ~/spark-ec2/slaves) | (while read line; do
+	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "rm -rf /masters_predictions" &
+tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
