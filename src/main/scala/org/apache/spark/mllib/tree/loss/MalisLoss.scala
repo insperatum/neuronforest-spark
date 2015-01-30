@@ -17,8 +17,8 @@ object MalisLoss extends MyLoss {
                points: RDD[MyTreePoint],
                save_to:String = null): RDD[(MyTreePoint, Double3)] = {
     val preds = model.predict(points.map(_.getFeatureVector))
-
     val g = points.zip(preds).mapPartitionsWithIndex((i, k) => {
+      println("Gradient for partition " + i + "...")
       grad(k.toArray, if (save_to == null) null else save_to + "/" + i).toIterator
     })
 

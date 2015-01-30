@@ -126,7 +126,9 @@ im12/split_112/001
 #RUN, COPY, DELETE:
 set +H
 
-~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=1 iterations=4
+dt=$(date '+%d%m%Y_%H%M%S');
+mkdir /root/logs
+~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=1 iterations=50 testEvery=5 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt"
 
 (cat ~/spark-ec2/slaves) | (tasks=""; while read line; do
 	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp /masters_predictions/ s3://neuronforest.sparkdata/predictions --recursive" &

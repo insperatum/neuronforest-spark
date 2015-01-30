@@ -35,6 +35,10 @@ import org.apache.spark.rdd.RDD
 @Experimental
 class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializable with MyModel {
 
+  private var maxDepth:Integer = Integer.MAX_VALUE
+  def capDepth(d:Integer) { maxDepth = d }
+  def uncapDepth() { maxDepth = Integer.MAX_VALUE }
+
   /**
    * Predict values for a single data point using the model trained.
    *
@@ -42,7 +46,7 @@ class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializa
    * @return Double prediction from the trained model
    */
   def predict(features: Vector): Double3 = {
-    topNode.predict(features)
+    topNode.predict(features, maxDepth)
   }
 
   /**

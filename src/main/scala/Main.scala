@@ -3,7 +3,7 @@ import java.text.SimpleDateFormat
 import java.util.{Date, Calendar}
 
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
-import org.apache.spark.mllib.tree.model.MyEnsembleModel
+import org.apache.spark.mllib.tree.model.{MyGradientBoostedTreesModel, MyRandomForestModel, MyEnsembleModel}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
 import org.apache.spark.mllib.tree.{MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
@@ -17,6 +17,8 @@ import org.apache.spark.mllib.tree.configuration.Algo._
 object Main {
 
   def main(args:Array[String]) {
+    val start_time = System.currentTimeMillis()
+
     //------------------------ Init ---------------------------------------
     val s = getSettingsFromArgs(args)
     println("Settings:\n" + s.toVerboseString)
@@ -63,12 +65,18 @@ object Main {
 
     val (train_cached, _) = NeuronUtils.cached(train)
     val (test_cached, _) = NeuronUtils.cached(test)
-    var partialIndex = 0
-    while(partialIndex < allPartialModels.size) { // If I use a for loop then the compiler does some optimization and all hell breaks loos
-      val partialModel = allPartialModels(partialIndex)
-      //for(/*partialModel <- partialModels*/ _ <- 0 until 1) {
+
+    val testPartialModels = s.testPartialModels + (allPartialModels.size-1) //ensure that the final model is tested
+    val testDepths = if(s.testDepths.isEmpty) Set(Integer.MAX_VALUE) else s.testDepths
+
+    for(i <- testPartialModels; depth <- testDepths) {
+      val partialModel = allPartialModels(i)
       val nElems = partialModel.nElems
-      println("\nTesting partial model with " + nElems + " elements")
+      partialModel match {
+        case m:MyRandomForestModel => m.trees.foreach(_.capDepth(depth))
+        case m:MyGradientBoostedTreesModel => m.elems.foreach(_.trees.foreach(_.capDepth(depth)))
+      }
+      println("\nTesting partial model with " + nElems + " elements, at depth " + depth)
 
       // Training Error
       val trainLabelsAndPredictions = train_cached.map { point =>
@@ -90,6 +98,7 @@ object Main {
       println("Train Mean Squared Error = " + trainMSE)
       trainLabelsAndPredictions.unpersist()
 
+
       // Test Error
       val testLabelsAndPredictions = test_cached.map { point =>
         val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
@@ -109,17 +118,12 @@ object Main {
       val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
       println("Test Mean Squared Error = " + testMSE)
       testLabelsAndPredictions.unpersist()
-
-
-      // If ensemble is only size 10 include all partials. Otherwise include ~5 partials
-      val step=allPartialModels.size/5
-      if(model.nElems <= 10) partialIndex += 1
-      else if(partialIndex < allPartialModels.size - step-1) partialIndex += step
-      else if(partialIndex != allPartialModels.size-1) partialIndex = allPartialModels.size-1
-      else partialIndex = allPartialModels.size //break out of loop
     }
 
+
+
     println("Job complete. Saved to: " + s.save_to + "/" + timestr)
+    println("Job took: " + ((System.currentTimeMillis() - start_time)/60000) + " minutes")
   }
 
 
@@ -128,8 +132,7 @@ object Main {
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
-                         iterations:Int, saveGradients:Boolean) {
-
+                         iterations:Int, saveGradients:Boolean, testPartialModels:Set[Int], testDepths:Set[Int]) {
     def toVerboseString =
       "RunSettings:\n" +
       " maxMemoryInMB = " + maxMemoryInMB + "\n" +
@@ -147,7 +150,9 @@ object Main {
       " trainFraction = "    + trainFraction + "\n" +
       " malisGrad = "    + malisGrad + "\n" +
       " iterations = "   + iterations + "\n" +
-      " saveGradients = " + saveGradients
+      " saveGradients = " + saveGradients + "\n" +
+      " testPartialModels = " + testPartialModels +
+      " testDepths = " + testDepths
   }
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
@@ -177,8 +182,10 @@ object Main {
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
       malisGrad     = m.getOrElse("malisGrad",     "1").toDouble,
-      iterations = m.getOrElse("iterations", "2").toInt,
-      saveGradients = m.getOrElse("saveGradients", "false").toBoolean
+      iterations    = m.getOrElse("iterations", "2").toInt,
+      saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
+      testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt).toSet,
+      testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt).toSet
     )
   }
 }

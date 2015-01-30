@@ -79,8 +79,8 @@ class MyNode (
    * @param features feature value
    * @return predicted value
    */
-  def predict(features: Vector) : Double3 = {
-    if (isLeaf) {
+  def predict(features: Vector, depth:Int = Integer.MAX_VALUE) : Double3 = {
+    if (isLeaf || MyNode.indexToLevel(id) == depth) {
       predict.predict
     } else{
       if (split.get.featureType == Continuous) {

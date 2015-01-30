@@ -189,7 +189,6 @@ object MyGradientBoostedTrees extends Logging {
     data = loss.gradient(startingModel, input, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
       p.copy(label = grad)
     }}
-//    val seg = MalisLoss.segment(startingModel, input) //todo: get rid of this
 
     import math.abs
     //data.map(d => (d.idx, d.label)).take(10).foreach(println)
@@ -201,6 +200,12 @@ object MyGradientBoostedTrees extends Logging {
       println("###################################################")
       println("Gradient boosting tree iteration " + m)
       println("###################################################")
+      data.mapPartitionsWithIndex { (i, _) => {
+        println("###################################################")
+        println("Partition " + i + ", Gradient boosting tree iteration " + m)
+        println("###################################################")
+        Iterator()
+      }}
       val model = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
         1, numFeatures, numExamples, splits, bins)
       timer.stop(s"building tree $m")
@@ -217,7 +222,6 @@ object MyGradientBoostedTrees extends Logging {
       // Update data with pseudo-residuals
 //      data = input.map(point => MyLabeledPoint(loss.gradient(partialModel, point) * -1,
 //        point.features))
-
 
       m += 1
 

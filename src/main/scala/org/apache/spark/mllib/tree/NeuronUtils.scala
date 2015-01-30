@@ -3,6 +3,8 @@ package org.apache.spark.mllib.tree
 import java.io
 import java.io.{RandomAccessFile, FileWriter}
 import java.nio.{FloatBuffer, ByteBuffer}
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
@@ -20,12 +22,13 @@ import scala.reflect.ClassTag
 object NeuronUtils {
 
   def cached[T: ClassTag](rdd:RDD[T]): (RDD[T], Unit => Unit) = { //todo: add unpersist!
-    println("Caching " + rdd)
+    println(new SimpleDateFormat("HH:mm:ss").format(new Date()) + " Caching " + rdd)
     val sc = rdd.sparkContext
     val nCached = sc.getRDDStorageInfo.length
     val cachedRDD = rdd.mapPartitions(p =>
       Iterator(p.toSeq)
-    ).cache()
+    )
+    cachedRDD.cache()
 
     val newRDD = cachedRDD.mapPartitions(p =>
       p.next().toIterator
@@ -35,7 +38,11 @@ object NeuronUtils {
     if(sc.getRDDStorageInfo.length == nCached)
       throw new Exception("Did not have enough memory to cache " + rdd + "! Failing.")
 
-    (newRDD, _ => cachedRDD.unpersist())
+    def unpersist() = {
+      println(new SimpleDateFormat("HH:mm:ss").format(new Date()) + " Uncaching " + rdd)
+      cachedRDD.unpersist()
+    }
+    (newRDD, _ => unpersist())
   }
 
   def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int, Int)]) = {
