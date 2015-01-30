@@ -3,7 +3,7 @@ import java.text.SimpleDateFormat
 import java.util.{Date, Calendar}
 
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
-import org.apache.spark.mllib.tree.model.{MyGradientBoostedTreesModel, MyRandomForestModel, MyEnsembleModel}
+import org.apache.spark.mllib.tree.model.{MyDecisionTreeModel, MyGradientBoostedTreesModel, MyRandomForestModel, MyEnsembleModel}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
 import org.apache.spark.mllib.tree.{MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
@@ -66,60 +66,65 @@ object Main {
     val (train_cached, _) = NeuronUtils.cached(train)
     val (test_cached, _) = NeuronUtils.cached(test)
 
-    val testPartialModels = s.testPartialModels + (allPartialModels.size-1) //ensure that the final model is tested
-    val testDepths = if(s.testDepths.isEmpty) Set(Integer.MAX_VALUE) else s.testDepths
+    val testPartialModels = (s.testPartialModels :+ (allPartialModels.size-1)).distinct //ensure that the final model is tested
+    val testDepths = if(s.testDepths.isEmpty) Seq(Integer.MAX_VALUE) else s.testDepths
 
-    for(i <- testPartialModels; depth <- testDepths) {
-      val partialModel = allPartialModels(i)
-      val nElems = partialModel.nElems
-      partialModel match {
-        case m:MyRandomForestModel => m.trees.foreach(_.capDepth(depth))
-        case m:MyGradientBoostedTreesModel => m.elems.foreach(_.trees.foreach(_.capDepth(depth)))
+    var i=0
+    while(i < testPartialModels.size) { //shit goes weird when I use a for loop. WHY? todo:INVESTIGATE
+      val partialModel = allPartialModels(testPartialModels(i))
+      i+=1
+      var j = 0
+      while (j < testDepths.size) { // WHYYYY???
+        val depth = testDepths(j)
+        j += 1
+
+        val nElems = partialModel.nElems
+        partialModel.elems.head match {
+          case _: MyDecisionTreeModel => partialModel.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth))
+          case _: MyRandomForestModel => partialModel.elems.foreach(_.asInstanceOf[MyRandomForestModel].trees.foreach(_.capDepth(depth)))
+        }
+        println("\nTesting partial model with " + nElems + " elements, at depth " + depth)
+
+        // Training Error
+        val trainLabelsAndPredictions = train_cached.map { point =>
+          val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
+          val prediction = partialModel.predict(Vectors.dense(features))
+          (point.label, prediction)
+        }.cache()
+        if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
+          println("save:")
+          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toVerboseString
+            /*,indexesAndGrads*/)
+          Iterator("foo")
+        }).count() != s.subvolumes.length) {
+          println("Failed to save!")
+          return
+        }
+        val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
+        println("Train Mean Squared Error = " + trainMSE)
+        trainLabelsAndPredictions.unpersist()
+
+
+        // Test Error
+        val testLabelsAndPredictions = test_cached.map { point =>
+          val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
+          val prediction = partialModel.predict(Vectors.dense(features))
+          (point.label, prediction)
+        }.cache()
+        if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
+          println("save:")
+          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toVerboseString
+            /*,indexesAndGrads*/)
+          Iterator("foo")
+        }).count() != s.subvolumes.length) {
+          println("Failed to save!")
+          return
+        }
+        val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
+        println("Test Mean Squared Error = " + testMSE)
+        testLabelsAndPredictions.unpersist()
       }
-      println("\nTesting partial model with " + nElems + " elements, at depth " + depth)
-
-      // Training Error
-      val trainLabelsAndPredictions = train_cached.map { point =>
-        val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-        val prediction = partialModel.predict(Vectors.dense(features))
-        (point.label, prediction)
-      }.cache()
-      println("Saving...")
-      if(trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
-        println("save:")
-        NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toVerboseString
-          /*,indexesAndGrads*/)
-        Iterator("foo")
-      }).count() != s.subvolumes.length) {
-        println("Failed to save!")
-        return
-      }
-      val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
-      println("Train Mean Squared Error = " + trainMSE)
-      trainLabelsAndPredictions.unpersist()
-
-
-      // Test Error
-      val testLabelsAndPredictions = test_cached.map { point =>
-        val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-        val prediction = partialModel.predict(Vectors.dense(features))
-        (point.label, prediction)
-      }.cache()
-      println("Saving...")
-      if(testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
-        println("save:")
-        NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toVerboseString
-          /*,indexesAndGrads*/)
-        Iterator("foo")
-      }).count() != s.subvolumes.length) {
-        println("Failed to save!")
-        return
-      }
-      val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
-      println("Test Mean Squared Error = " + testMSE)
-      testLabelsAndPredictions.unpersist()
     }
-
 
 
     println("Job complete. Saved to: " + s.save_to + "/" + timestr)
@@ -132,7 +137,7 @@ object Main {
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
-                         iterations:Int, saveGradients:Boolean, testPartialModels:Set[Int], testDepths:Set[Int]) {
+                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int]) {
     def toVerboseString =
       "RunSettings:\n" +
       " maxMemoryInMB = " + maxMemoryInMB + "\n" +
@@ -151,7 +156,7 @@ object Main {
       " malisGrad = "    + malisGrad + "\n" +
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
-      " testPartialModels = " + testPartialModels +
+      " testPartialModels = " + testPartialModels + "\n" +
       " testDepths = " + testDepths
   }
 
@@ -184,8 +189,8 @@ object Main {
       malisGrad     = m.getOrElse("malisGrad",     "1").toDouble,
       iterations    = m.getOrElse("iterations", "2").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
-      testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt).toSet,
-      testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt).toSet
+      testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt),
+      testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt)
     )
   }
 }

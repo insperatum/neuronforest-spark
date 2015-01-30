@@ -2,15 +2,10 @@
 	MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master NAME | tail -1`
 
 
-#download all data onto workers
+#download all data onto workers (don't do this any more)
 (ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | while read line; do
 	ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'source aws_credentials.sh && /root/.local/lib/aws/bin/aws s3 cp s3://neuronforest.sparkdata /mnt/data --recursive' &
 done
-
-
-#run job
-~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=50 nTrees=10 iterations=2
-
 
 #watch log for one worker
 (ssh -i ~/luke.pem root@$MASTER 'tail -1 /root/spark-ec2/slaves') | while read line; do ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'cd /root/spark/work/ && echo $(ls | tail -1) && cd $(ls | tail -1) && tail -f ./*/stdout' ; done
@@ -126,9 +121,9 @@ im12/split_112/001
 #RUN, COPY, DELETE:
 set +H
 
-dt=$(date '+%d%m%Y_%H%M%S');
+dt=$(date '+%Y%m%d_%H%M%S');
 mkdir /root/logs
-~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=1 iterations=50 testEvery=5 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt"
+~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=50 iterations=1 maxDepth=15 testPartialModels=0,10,20,40 testDepths=5,10,15 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt"
 
 (cat ~/spark-ec2/slaves) | (tasks=""; while read line; do
 	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp /masters_predictions/ s3://neuronforest.sparkdata/predictions --recursive" &

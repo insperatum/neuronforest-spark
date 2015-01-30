@@ -79,21 +79,21 @@ class MyNode (
    * @param features feature value
    * @return predicted value
    */
-  def predict(features: Vector, depth:Int = Integer.MAX_VALUE) : Double3 = {
-    if (isLeaf || MyNode.indexToLevel(id) == depth) {
+  def predict(features: Vector, maxDepth:Int = Integer.MAX_VALUE) : Double3 = {
+    if (isLeaf || MyNode.indexToLevel(id) >= maxDepth) {
       predict.predict
     } else{
       if (split.get.featureType == Continuous) {
         if (features(split.get.feature) <= split.get.threshold) {
-          leftNode.get.predict(features)
+          leftNode.get.predict(features, maxDepth)
         } else {
-          rightNode.get.predict(features)
+          rightNode.get.predict(features, maxDepth)
         }
       } else {
         if (split.get.categories.contains(features(split.get.feature))) {
-          leftNode.get.predict(features)
+          leftNode.get.predict(features, maxDepth)
         } else {
-          rightNode.get.predict(features)
+          rightNode.get.predict(features, maxDepth)
         }
       }
     }

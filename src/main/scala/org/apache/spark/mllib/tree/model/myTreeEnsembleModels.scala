@@ -72,7 +72,7 @@ class MyGradientBoostedTreesModel(
  */
 class MyEnsembleModel[T <: MyModel](
     protected val algo: Algo,
-    protected val elems: Array[T],
+             val elems: Array[T],
     protected val treeWeights: Array[Double],
     protected val combiningStrategy: EnsembleCombiningStrategy) extends Serializable with MyModel {
 
