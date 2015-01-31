@@ -123,7 +123,7 @@ set +H
 
 dt=$(date '+%Y%m%d_%H%M%S');
 mkdir /root/logs
-~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=50 iterations=1 maxDepth=15 testPartialModels=0,10,20,40 testDepths=5,10,15 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt"
+~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data localDir=/mnt/tmp master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=50 iterations=1 maxDepth=15 testPartialModels=0,10,20,40 testDepths=5,10,15 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt"
 
 (cat ~/spark-ec2/slaves) | (tasks=""; while read line; do
 	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp /masters_predictions/ s3://neuronforest.sparkdata/predictions --recursive" &

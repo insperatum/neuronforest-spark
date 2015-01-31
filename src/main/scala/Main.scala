@@ -25,7 +25,7 @@ object Main {
 
     val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
     val nFeatures = s.nBaseFeatures * offsets.length
-    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false")
+    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.local.dir", s.localDir)
     if (!s.master.isEmpty) conf.setMaster(s.master)
     val sc = new SparkContext(conf)
 
@@ -134,13 +134,14 @@ object Main {
 
   // -----------------------------------------------------------------------
 
-  case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, subvolumes:Seq[String], featureSubsetStrategy:String,
+  case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int]) {
     def toVerboseString =
       "RunSettings:\n" +
       " maxMemoryInMB = " + maxMemoryInMB + "\n" +
+      " localDir = " + localDir + "\n" +
       " data_root = "     + data_root + "\n" +
       " save_to = "       + save_to + "\n" +
       " subvolumes = "    + subvolumes.toList + "\n" +
@@ -167,9 +168,9 @@ object Main {
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
-
       data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
+      localDir      = m.getOrElse("localDir",     "/tmp"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = {
         val str = m.getOrElse("subvolumes",    "011")
