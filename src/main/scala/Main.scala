@@ -40,11 +40,11 @@ object Main {
 
     val model: MyEnsembleModel[_] = if (s.iterations == 1) {
       //    Random Forest
-      MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.nTrees, s.featureSubsetStrategy: String, 1,
+      MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.initialTrees, s.featureSubsetStrategy: String, 1,
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
     } else {
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.iterations, s.nTrees, s.malisGrad)
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.iterations, s.initialTrees, s.treesPerIteration, s.malisGrad)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
@@ -135,7 +135,7 @@ object Main {
   // -----------------------------------------------------------------------
 
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
-                         impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, nTrees:Int,
+                         impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialTrees:Int, treesPerIteration:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int]) {
     def toVerboseString =
@@ -150,7 +150,8 @@ object Main {
       " maxDepth = "    + maxDepth + "\n" +
       " maxBins = "    + maxBins + "\n" +
       " nBaseFeatures = "    + nBaseFeatures + "\n" +
-      " nTrees = "    + nTrees + "\n" +
+    "   initialTrees = "    + initialTrees + "\n" +
+      " treesPerIteration = "    + treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
       " master = "    + master + "\n" +
       " trainFraction = "    + trainFraction + "\n" +
@@ -183,12 +184,13 @@ object Main {
       maxDepth      = m.getOrElse("maxDepth",      "14").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,
-      nTrees        = m.getOrElse("nTrees",        "10").toInt,
+      initialTrees  = m.getOrElse("initialTrees",          "10").toInt,
+      treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
-      malisGrad     = m.getOrElse("malisGrad",     "1").toDouble,
-      iterations    = m.getOrElse("iterations", "2").toInt,
+      malisGrad     = m.getOrElse("malisGrad",     "100").toDouble,
+      iterations    = m.getOrElse("iterations", "1").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt),
       testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt)

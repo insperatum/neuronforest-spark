@@ -148,6 +148,7 @@ object MyGradientBoostedTrees extends Logging {
     // Initialize gradient boosting parameters
     val numIterations = boostingStrategy.numIterations
     val treesPerIteration = boostingStrategy.treesPerIteration
+    val initialTrees = boostingStrategy.initialTrees
     val baseLearners = new Array[MyRandomForestModel](numIterations)
     val baseLearnerWeights = new Array[Double](numIterations)
     val loss = boostingStrategy.loss
@@ -167,7 +168,7 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("init")
 
     println("##########")
-    println("Building tree 0")
+    println("Building initial model")
     println("##########")
     var data = input
 
@@ -175,7 +176,7 @@ object MyGradientBoostedTrees extends Logging {
     timer.start("building tree 0")
 //    val firstTreeModel = new MyRandomForest(forestStrategy, treesPerIteration, featureSubsetStrategy, 1).
 //      trainFromMyTreePoints(data, numFeatures, numExamples, splits, bins)
-    val firstTreeModel = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
+    val firstTreeModel = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, initialTrees, featureSubsetStrategy,
       1, numFeatures, numExamples, splits, bins
 )
     baseLearners(0) = firstTreeModel
@@ -194,7 +195,7 @@ object MyGradientBoostedTrees extends Logging {
     //data.map(d => (d.idx, d.label)).take(10).foreach(println)
     //println(data.map(d => abs(d.label._1) + abs(d.label._2) + abs(d.label._3)).reduce(_+_))
     //println(input.count())
-    var m = 1
+    var m = 0
     while (m < numIterations) {
       timer.start(s"building tree $m")
       println("###################################################")

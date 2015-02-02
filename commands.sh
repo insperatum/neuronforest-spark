@@ -10,6 +10,8 @@ done
 #watch log for one worker
 (ssh -i ~/luke.pem root@$MASTER 'tail -1 /root/spark-ec2/slaves') | while read line; do ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'cd /root/spark/work/ && echo $(ls | tail -1) && cd $(ls | tail -1) && tail -f ./*/stdout' ; done
 
+#watch stats for one worker
+(ssh -i ~/luke.pem root@$MASTER 'tail -1 /root/spark-ec2/slaves') | while read line; do ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'watch "df && echo && cat /proc/meminfo"' ; done
 
 
 (ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | while read line; do
@@ -22,6 +24,14 @@ done
 (ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | while read line; do
 	ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'rm -r /masters_predictions; mkdir /masters_predictions'
 done
+
+
+#Install aws CLI on a new cluster
+(echo $MASTER && ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (tasks=""; for v in ${volumes[0]} ${volumes[@]}; do
+	read line; ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line "curl 'https://s3.amazonaws.com/aws-cli/awscli-bundle.zip' -o 'awscli-bundle.zip' && yes | unzip awscli-bundle.zip && sudo yes | ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws" &
+tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
+
+
 
 #download different data to each worker
 #CLUSTER36
@@ -64,6 +74,8 @@ im12/split_122/011)
 (echo $MASTER && ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (tasks=""; for v in ${volumes[0]} ${volumes[@]}; do
 	read line; ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp s3://neuronforest.sparkdata/$v /mnt/data --recursive" &
 tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
+
+
 
 #copy predictions to s3
 (ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (while read line; do
@@ -123,13 +135,16 @@ set +H
 
 dt=$(date '+%Y%m%d_%H%M%S');
 mkdir /root/logs
-~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar data_root=/mnt/data localDir=/mnt/tmp master= subvolumes=.*36 dimOffsets=0 malisGrad=100 nTrees=50 iterations=1 maxDepth=15 testPartialModels=0,10,20,40 testDepths=5,10,15 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt"
-
+~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar maxMemoryInMB=3000 data_root=/mnt/data localDir=/mnt/tmp master= subvolumes=.*36 dimOffsets=0 malisGrad=100 initialTrees=200 treesPerIteration=0 iterations=0 maxDepth=30 testPartialModels=0,9,49,99,199 testDepths=5,10,15,20,25,30 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
 (cat ~/spark-ec2/slaves) | (tasks=""; while read line; do
 	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp /masters_predictions/ s3://neuronforest.sparkdata/predictions --recursive" &
-tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
-
-
+ tasks="$tasks $!"; done; for t in $tasks; do wait $t; done) &&
 (cat ~/spark-ec2/slaves) | (while read line; do
 	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "rm -rf /masters_predictions" &
 tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
+
+
+
+
+#Run (from home) and exit
+ssh -i ~/luke.pem root@$MASTER './experiment.sh'; spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 -s 1 stop BIG36 
