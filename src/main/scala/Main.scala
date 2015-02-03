@@ -38,7 +38,7 @@ object Main {
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
-    val model: MyEnsembleModel[_] = if (s.iterations == 1) {
+    val model: MyEnsembleModel[_] = if (s.iterations == 0) {
       //    Random Forest
       MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.initialTrees, s.featureSubsetStrategy: String, 1,
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
