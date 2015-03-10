@@ -5,7 +5,7 @@ neuronforest-spark
 
 **To setup on EC2:**
 
-./spark-ec2 -k luke -i ~/luke.pem -s 8 --instance-type=m3.medium --region=eu-west-1 --spark-version=e895e0cbecbbec1b412ff21321e57826d2d0a982 launch *NAME*
+./spark-ec2 -k luke -i ~/luke.pem -s 36 --instance-type=r3.xlarge --master-instance-type=r3.4xlarge --region=eu-west-1 --spark-version=e895e0cbecbbec1b412ff21321e57826d2d0a982 launch *NAME*
 
 MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master *NAME* | tail -1`
 
