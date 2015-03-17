@@ -135,7 +135,7 @@ set +H
 
 dt=$(date '+%Y%m%d_%H%M%S');
 mkdir /root/logs
-~/spark/bin/spark-submit --driver-memory 12G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar maxMemoryInMB=3000 data_root=/mnt/data localDir=/mnt/tmp master= subvolumes=.*36 dimOffsets=0 malisGrad=100 initialTrees=200 treesPerIteration=0 iterations=0 maxDepth=30 testPartialModels=0,9,49,99,199 testDepths=5,10,15,20,25,30 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 122G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.4 --conf spark.storage.memoryFraction=0.4 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar maxMemoryInMB=500 data_root=/mnt/data localDir=/mnt/tmp master= subvolumes=.*36 dimOffsets=0 malisGrad=100 initialTrees=50 treesPerIteration=0 iterations=0 maxDepth=15 testPartialModels=0,9,49,99 testDepths=5,10,15 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
 (cat ~/spark-ec2/slaves) | (tasks=""; while read line; do
 	ssh -n -o StrictHostKeyChecking=no -t -t root@$line "source aws-credentials && /usr/local/aws/bin/aws s3 cp /masters_predictions/ s3://neuronforest.sparkdata/predictions --recursive" &
  tasks="$tasks $!"; done; for t in $tasks; do wait $t; done) &&
@@ -146,5 +146,5 @@ tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
 
 
 
-#Run (from home) and exit
+#Run (from home) and exit THIS DOESN'T WORK, DO I NEED A -t -t or something??
 ssh -i ~/luke.pem root@$MASTER './experiment.sh'; spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 -s 1 stop BIG36 

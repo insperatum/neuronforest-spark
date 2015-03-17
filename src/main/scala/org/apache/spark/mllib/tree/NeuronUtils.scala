@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import org.apache.spark.SparkContext
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.configuration.{MyStrategy, Strategy}
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.Algo._
@@ -84,6 +86,40 @@ object NeuronUtils {
   }
 
 
+
+  def loadLabeledData1D(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
+               proportion: Double, fromFront: Boolean) = {
+    val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
+      val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
+      Seq(new RawFeatureData(features_file, nBaseFeatures)).toIterator
+    })
+
+    val dimensions = getDimensions(sc, data_root, subvolumes, proportion, fromFront)
+    val data = rawFeaturesData.zip(dimensions).mapPartitionsWithIndex((i, p) => {
+      val startTime = System.currentTimeMillis()
+
+      val (rawData, dimensions) = p.next()
+
+      val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
+
+      val indexer = new Indexer3D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
+
+      val featureVectors = rawData.toVectors.toArray
+
+      val d = targets.zipWithIndex.map { case (ts, idx) =>
+        val y = Double3(ts(0), ts(1), ts(2))
+        val seg = ts(3).toInt
+        val outer_idx = indexer.innerToOuter(idx)
+        //new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
+        val features = featureVectors(outer_idx)
+        new LabeledPoint(ts(0), features)
+      }
+
+      println("creating partition data took " + (System.currentTimeMillis() - startTime) + " ms")
+      d
+    })
+    (data, dimensions.collect())
+  }
 
   case class Dimensions(outerDimensions:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
 

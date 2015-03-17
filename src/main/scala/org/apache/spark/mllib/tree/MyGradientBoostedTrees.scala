@@ -177,8 +177,8 @@ object MyGradientBoostedTrees extends Logging {
 //    val firstTreeModel = new MyRandomForest(forestStrategy, treesPerIteration, featureSubsetStrategy, 1).
 //      trainFromMyTreePoints(data, numFeatures, numExamples, splits, bins)
     val firstTreeModel = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, initialTrees, featureSubsetStrategy,
-      1, numFeatures, numExamples, splits, bins
-)
+      1, numFeatures, numExamples, splits, bins)
+
     baseLearners(0) = firstTreeModel
     baseLearnerWeights(0) = 1.0
     val startingModel = new MyGradientBoostedTreesModel(Regression, Array(firstTreeModel), Array(1.0))
@@ -187,9 +187,13 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("building tree 0")
 
     // psuedo-residual for second iteration
+
     data = loss.gradient(startingModel, input, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
       p.copy(label = grad)
     }}
+    val (d, unc) = NeuronUtils.cached(data)
+    data = d
+    var uncacheData = unc
 
     import math.abs
     //data.map(d => (d.idx, d.label)).take(10).foreach(println)
@@ -199,17 +203,19 @@ object MyGradientBoostedTrees extends Logging {
     while (m < numIterations) {
       timer.start(s"building tree $m")
       println("###################################################")
-      println("Gradient boosting tree iteration " + m)
+      println("Gradient boosting tree iteration " + m + " of " + numIterations)
       println("###################################################")
       data.mapPartitionsWithIndex { (i, _) => {
         println("###################################################")
         println("Partition " + i + ", Gradient boosting tree iteration " + m)
         println("###################################################")
         Iterator()
-      }}
+      }}.count()
+
       val model = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
         1, numFeatures, numExamples, splits, bins)
       timer.stop(s"building tree $m")
+      println("Finished building tree")
       // Create partial model
       baseLearners(m) = model
       // Note: The setting of baseLearnerWeights is incorrect for losses other than SquaredError.
@@ -217,6 +223,8 @@ object MyGradientBoostedTrees extends Logging {
       //       However, the behavior should be reasonable, though not optimal.
       baseLearnerWeights(m) = learningRate
       // Note: A model of type regression is used since we require raw prediction
+
+      println("Training partial model")
       val partialModel = new MyGradientBoostedTreesModel(
         Regression, baseLearners.slice(0, m + 1), baseLearnerWeights.slice(0, m + 1))
       logDebug("error of gbt = " + loss.computeError(partialModel, input))
@@ -226,10 +234,17 @@ object MyGradientBoostedTrees extends Logging {
 
       m += 1
 
+      uncacheData()
       if(m < numIterations) {
-        data = loss.gradient(partialModel, input, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m).map { case (p, grad) => {
+        println("Finding gradient")
+        data = loss.gradient(partialModel, input,
+          if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m
+        ).map { case (p, grad) => {
           p.copy(label = grad)
         }}
+        val (d2, unc2) = NeuronUtils.cached(data)
+        data = d2
+        uncacheData = unc2
       }
 
     }

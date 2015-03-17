@@ -17,6 +17,8 @@
 
 package org.apache.spark.mllib.tree
 
+import java.io.{ObjectOutputStream, ByteArrayOutputStream}
+
 import org.apache.spark.Logging
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
@@ -611,6 +613,7 @@ object MyDecisionTree extends Serializable with Logging {
 
     val partitionAggregates : RDD[(Int, MyDTStatsAggregator)] = if (nodeIdCache.nonEmpty) {
       input.zip(nodeIdCache.get.nodeIdsForInstances).mapPartitions { points =>
+        println("[" + (new java.util.Date) + "] making aggregators array (cached)")
         // Construct a nodeStatsAggregators array to hold node aggregate stats,
         // each node will have a nodeStatsAggregator
         val nodeStatsAggregators = Array.tabulate(numNodes) { nodeIndex =>
@@ -620,15 +623,18 @@ object MyDecisionTree extends Serializable with Logging {
           new MyDTStatsAggregator(metadata, featuresForNode)
         }
 
+        println("[" + (new java.util.Date) + "] performing binSeqOp...")
         // iterator all instances in current partition and update aggregate stats
         points.foreach(binSeqOpWithNodeIdCache(nodeStatsAggregators, _))
 
+        println("[" + (new java.util.Date) + "] done.")
         // transform nodeStatsAggregators array to (nodeIndex, nodeAggregateStats) pairs,
         // which can be combined with other partition using `reduceByKey`
         nodeStatsAggregators.view.zipWithIndex.map(_.swap).iterator
       }
     } else {
       input.mapPartitions { points =>
+        println("[" + (new java.util.Date) + "] making aggregators array (uncached)")
         // Construct a nodeStatsAggregators array to hold node aggregate stats,
         // each node will have a nodeStatsAggregator
         val nodeStatsAggregators = Array.tabulate(numNodes) { nodeIndex =>
@@ -638,26 +644,67 @@ object MyDecisionTree extends Serializable with Logging {
           new MyDTStatsAggregator(metadata, featuresForNode)
         }
 
+        println("[" + (new java.util.Date) + "] performing binSeqOp...")
         // iterator all instances in current partition and update aggregate stats
         points.foreach(binSeqOp(nodeStatsAggregators, _))
 
+        println("[" + (new java.util.Date) + "] done.")
         // transform nodeStatsAggregators array to (nodeIndex, nodeAggregateStats) pairs,
         // which can be combined with other partition using `reduceByKey`
         nodeStatsAggregators.view.zipWithIndex.map(_.swap).iterator
       }
     }
 
-    val nodeToBestSplits = partitionAggregates.reduceByKey((a, b) => a.merge(b))
-        .map { case (nodeIndex, aggStats) =>
-          val featuresForNode = nodeToFeaturesBc.value.flatMap { nodeToFeatures =>
-            Some(nodeToFeatures(nodeIndex))
-          }
+    partitionAggregates.cache()
+//    println("[" + (new java.util.Date) + "] Partition aggregates...")
+//    println("\tcount: " + partitionAggregates.count())
 
-          // find best split for each node
-          val (split: Split, stats: MyInformationGainStats, predict: MyPredict) =
-            binsToBestSplit(aggStats, splits, featuresForNode, nodes(nodeIndex))
-          (nodeIndex, (split, stats, predict))
-        }.collectAsMap()
+    val nodesAndBestSplits = partitionAggregates.reduceByKey((a, b) => a.merge(b))
+      .map { case (nodeIndex, aggStats) =>
+      val featuresForNode = nodeToFeaturesBc.value.flatMap { nodeToFeatures =>
+        Some(nodeToFeatures(nodeIndex))
+      }
+
+      // find best split for each node
+      val (split: Split, stats: MyInformationGainStats, predict: MyPredict) =
+        binsToBestSplit(aggStats, splits, featuresForNode, nodes(nodeIndex))
+      (nodeIndex, (split, stats, predict))
+    }
+    partitionAggregates.unpersist()
+
+
+    val nodeToBestSplits = try {
+      nodesAndBestSplits.collectAsMap()
+    } catch {
+      case _ =>
+        println("AGGRAVTING ARRAY SIZE BUG WHEN MAPPING NODES TO BEST SPLITS")
+        nodesAndBestSplits.cache()
+        val mb = 1024*1024
+
+        //Getting the runtime reference from system
+        val runtime = Runtime.getRuntime()
+        println("##### Heap utilization statistics [MB] #####")
+        println("Used Memory:" + (runtime.totalMemory() - runtime.freeMemory()) / mb)
+        println("Free Memory:" + runtime.freeMemory() / mb)
+        println("Total Memory:" + runtime.totalMemory() / mb)
+        println("Max Memory:" + runtime.maxMemory() / mb)
+        println()
+
+        println("PartitionAggregates has " + partitionAggregates.count() + " elements")
+
+        //        val first = nodesAndBestSplits.take(1)(0)
+//
+//        val baos = new ByteArrayOutputStream()
+//        val oos = new ObjectOutputStream( baos )
+//        oos.writeObject( first )
+//        oos.close()
+//        println()
+//        println("First element serialized size: " + baos.toByteArray.length)
+//        println("First element to string:")
+//        println(first)
+
+        ???
+    }
 
     timer.stop("chooseSplits")
 

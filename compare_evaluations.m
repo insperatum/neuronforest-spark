@@ -1,8 +1,8 @@
 for trainOrTest = {'train', 'test'}
     trainOrTest = trainOrTest{1};
     roots = {...
-        '/masters_predictions/s3/2015-01-04 00-29-41/predictions/partial11', ...
-        '/masters_predictions/s3/2015-01-04 01-30-19/predictions/partial11'
+        '/masters_predictions/s3/2015-01-04 14-19-09/predictions/partial5', ...
+        '/masters_predictions/s3/2015-01-04 15-39-23/predictions/partial5'
         };
     clear results;
     for i = 1:length(roots)
@@ -22,7 +22,7 @@ for trainOrTest = {'train', 'test'}
         ylim([0, 1]);
         hold on;
     end
-    legend('Vanilla RF', 'Gradient Boosting with MALIS');
+    legend('No Offsets', '27 Offsets, Spacing=2');
 
     figure;
     for i = 1:length(results)
@@ -35,7 +35,7 @@ for trainOrTest = {'train', 'test'}
         ylim([0, 1]);
         hold on;
     end
-    legend('Vanilla RF', 'Gradient Boosting with MALIS');
+    legend('No Offsets', '27 Offsets, Spacing=2');
 %{
     figure;
     for i = 1:length(results)

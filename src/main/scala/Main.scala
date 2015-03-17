@@ -3,14 +3,14 @@ import java.text.SimpleDateFormat
 import java.util.{Date, Calendar}
 
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
-import org.apache.spark.mllib.tree.model.{MyDecisionTreeModel, MyGradientBoostedTreesModel, MyRandomForestModel, MyEnsembleModel}
+import org.apache.spark.mllib.tree.model._
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
-import org.apache.spark.mllib.tree.{MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
+import org.apache.spark.mllib.tree.{RandomForest, MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
 import org.apache.spark.mllib.tree.configuration.{MyBoostingStrategy, MyStrategy, Strategy}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.mllib.tree.impurity.{Gini, Entropy, MyImpurity, MyImpurities}
+import org.apache.spark.mllib.tree.impurity._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
 import org.apache.spark.mllib.tree.configuration.Algo._
 
@@ -32,19 +32,21 @@ object Main {
     val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
     val save_to = s.save_to + "/" + timestr
 
-    //-------------------------- Train -------------------------------------
+//    //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
     val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
 
     val model: MyEnsembleModel[_] = if (s.iterations == 0) {
+      println("Training a Random Forest Model (no gradient boosting)")
       //    Random Forest
       MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.initialTrees, s.featureSubsetStrategy: String, 1,
         nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
     } else {
+      println("Training a Gradient boosted model")
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.iterations, s.initialTrees, s.treesPerIteration, s.malisGrad)
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.initialTrees, s.iterations, s.treesPerIteration, s.malisGrad)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
@@ -56,6 +58,25 @@ object Main {
     }*/
     println("trained.")
 
+    //-------------------------- Train 1D! -------------------------------------
+//    //val (train, dimensions_train) = NeuronUtils.loadLabeledData1D(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.trainFraction, fromFront = true)
+//    val (train, dimensions_train) = NeuronUtils.loadLabeledData1D(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.trainFraction, fromFront = true)
+//    //train.persist(StorageLevel.MEMORY_ONLY_SER)
+//    val strategy = new Strategy(Regression, Variance, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
+//
+//    val model: RandomForestModel = if (s.iterations == 0) {
+//      println("Training a Random Forest Model (no gradient boosting)")
+//      //    Random Forest
+//      RandomForest.trainRegressor(train, strategy, s.initialTrees, s.featureSubsetStrategy, 1)
+//    } else {
+//      println("Training a Gradient boosted model")
+//      //    Gradient Boosting
+//      ???
+//    } /*else {
+//      println(s.mode + " is not a valid mode!")
+//      ???
+//    }*/
+//    println("trained.")
 
 
     //-------------------------- Test ---------------------------------------
