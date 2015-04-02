@@ -34,7 +34,7 @@ import org.apache.spark.mllib.tree.model.{Bin, Node, Split}
  * @param nodeIndex The current node index of a data point that this will update.
  */
 @DeveloperApi
-private[tree] case class NodeIndexUpdater(
+private[tree] case class MyNodeIndexUpdater(
                                            split: Split,
                                            nodeIndex: Int) {
   /**
@@ -108,7 +108,7 @@ private[tree] class MyNodeIdCache(
    */
   def updateNodeIndices(
                          data: RDD[BaggedPoint[MyTreePoint]],
-                         nodeIdUpdaters: Array[mutable.Map[Int, NodeIndexUpdater]],
+                         nodeIdUpdaters: Array[mutable.Map[Int, MyNodeIndexUpdater]],
                          bins: Array[Array[Bin]]): Unit = {
     if (prevNodeIdsForInstances != null) {
       // Unpersist the previous one if one exists.

@@ -36,7 +36,7 @@ object Main {
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
     val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
-    val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
+    val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 
     val model: MyEnsembleModel[_] = if (s.iterations == 0) {
       println("Training a Random Forest Model (no gradient boosting)")
@@ -56,13 +56,13 @@ object Main {
       println(s.mode + " is not a valid mode!")
       ???
     }*/
-    println("trained.")
+    val training_time = (System.currentTimeMillis() - start_time)/60000
+    println("Trained (took " + training_time + " minutes.")
 
     //-------------------------- Train 1D! -------------------------------------
-//    //val (train, dimensions_train) = NeuronUtils.loadLabeledData1D(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.trainFraction, fromFront = true)
-//    val (train, dimensions_train) = NeuronUtils.loadLabeledData1D(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.trainFraction, fromFront = true)
+//    val (train, dimensions_train) = NeuronUtils.randomLabeledData1D(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.trainFraction, fromFront = true)
 //    //train.persist(StorageLevel.MEMORY_ONLY_SER)
-//    val strategy = new Strategy(Regression, Variance, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB)
+//    val strategy = new Strategy(Regression, Variance, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 //
 //    val model: RandomForestModel = if (s.iterations == 0) {
 //      println("Training a Random Forest Model (no gradient boosting)")
@@ -83,16 +83,17 @@ object Main {
     val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
 
     val allPartialModels:Seq[MyEnsembleModel[_]] = model.getPartialModels
+    println("There are " + allPartialModels.size + " partial models")
 
     val (train_cached, _) = NeuronUtils.cached(train)
     val (test_cached, _) = NeuronUtils.cached(test)
 
-    val testPartialModels = (s.testPartialModels :+ (allPartialModels.size-1)).distinct //ensure that the final model is tested
+    val testPartialModels = (s.testPartialModels :+ allPartialModels.size).distinct //ensure that the final model is tested
     val testDepths = if(s.testDepths.isEmpty) Seq(Integer.MAX_VALUE) else s.testDepths
 
     var i=0
     while(i < testPartialModels.size) { //shit goes weird when I use a for loop. WHY? todo:INVESTIGATE
-      val partialModel = allPartialModels(testPartialModels(i))
+      val partialModel = allPartialModels(testPartialModels(i)-1)
       i+=1
       var j = 0
       while (j < testDepths.size) { // WHYYYY???
@@ -114,7 +115,7 @@ object Main {
         }.cache()
         if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
-          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/train/" + i, p, dimensions_train(i), s.toVerboseString
+          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + i, p, dimensions_train(i), s.toVerboseString, training_time
             /*,indexesAndGrads*/)
           Iterator("foo")
         }).count() != s.subvolumes.length) {
@@ -134,7 +135,7 @@ object Main {
         }.cache()
         if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
-          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/test/" + i, p, dimensions_test(i), s.toVerboseString
+          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/test/" + i, p, dimensions_test(i), s.toVerboseString, training_time
             /*,indexesAndGrads*/)
           Iterator("foo")
         }).count() != s.subvolumes.length) {
@@ -147,8 +148,8 @@ object Main {
       }
     }
 
-
     println("Job complete. Saved to: " + s.save_to + "/" + timestr)
+
     println("Job took: " + ((System.currentTimeMillis() - start_time)/60000) + " minutes")
   }
 
@@ -158,7 +159,7 @@ object Main {
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialTrees:Int, treesPerIteration:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
-                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int]) {
+                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int], useNodeIdCache:Boolean) {
     def toVerboseString =
       "RunSettings:\n" +
       " maxMemoryInMB = " + maxMemoryInMB + "\n" +
@@ -180,7 +181,8 @@ object Main {
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
       " testPartialModels = " + testPartialModels + "\n" +
-      " testDepths = " + testDepths
+      " testDepths = " + testDepths + "\n" +
+      " useNodeIdCache = " + useNodeIdCache
   }
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
@@ -214,7 +216,8 @@ object Main {
       iterations    = m.getOrElse("iterations", "1").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt),
-      testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt)
+      testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt),
+      useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean
     )
   }
 }

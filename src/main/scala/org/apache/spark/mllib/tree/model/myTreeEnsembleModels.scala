@@ -79,7 +79,7 @@ class MyEnsembleModel[T <: MyModel](
   private val sumWeights = math.max(treeWeights.sum, 1e-15)
 
   def nElems = elems.size
-  def getPartialModels:Seq[MyEnsembleModel[T]] = (1 to elems.length).map(n =>
+  def getPartialModels:Seq[MyEnsembleModel[T]] = (1 to nElems).map(n =>
     new MyEnsembleModel(algo, elems.take(n), treeWeights.take(n), combiningStrategy))
 
   /**

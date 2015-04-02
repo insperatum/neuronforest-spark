@@ -121,6 +121,21 @@ object NeuronUtils {
     (data, dimensions.collect())
   }
 
+  def randomLabeledData1D(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
+                          proportion: Double, fromFront: Boolean) = {
+    println("USING COMPLETELY RANDOM SYNTHETIC DATA")
+    val data = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
+      Array.tabulate(1000000){_ =>
+        new LabeledPoint(Math.random(), Vectors.dense(Array.fill(nBaseFeatures)(math.random)))
+      }.toIterator
+    }).cache()
+
+    val dimensions = Array.tabulate(subvolumes.size){_ =>
+      Dimensions((100, 100, 100), (0, 0, 0), (199, 199, 199), 1000000, 0)
+    }
+    (data, dimensions)
+  }
+
   case class Dimensions(outerDimensions:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
 
   private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Seq[String], proportion:Double, fromFront:Boolean) = {
@@ -231,13 +246,14 @@ object NeuronUtils {
   }
 
   def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions,
-                               description:String, indexesAndGrads:Array[(Int, Double3)] = null): Unit = {
+                               description:String, training_time:Long, indexesAndGrads:Array[(Int, Double3)] = null): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
 
     val fwdescription = new FileWriter(path + "/description.txt", false)
     fwdescription.write(description)
+    fwdescription.write("\nTraining took " + training_time + " minutes.")
     fwdescription.close()
 
     val fwdimensions = new FileWriter(path + "/dimensions.txt", false)

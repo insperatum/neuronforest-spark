@@ -655,7 +655,7 @@ object MyDecisionTree extends Serializable with Logging {
       }
     }
 
-    partitionAggregates.cache()
+    //partitionAggregates.cache()
 //    println("[" + (new java.util.Date) + "] Partition aggregates...")
 //    println("\tcount: " + partitionAggregates.count())
 
@@ -670,12 +670,12 @@ object MyDecisionTree extends Serializable with Logging {
         binsToBestSplit(aggStats, splits, featuresForNode, nodes(nodeIndex))
       (nodeIndex, (split, stats, predict))
     }
-    partitionAggregates.unpersist()
+    //partitionAggregates.unpersist()
 
 
-    val nodeToBestSplits = try {
+    val nodeToBestSplits = //try {
       nodesAndBestSplits.collectAsMap()
-    } catch {
+    /*} catch {
       case _ =>
         println("AGGRAVTING ARRAY SIZE BUG WHEN MAPPING NODES TO BEST SPLITS")
         nodesAndBestSplits.cache()
@@ -704,13 +704,13 @@ object MyDecisionTree extends Serializable with Logging {
 //        println(first)
 
         ???
-    }
+    }*/
 
     timer.stop("chooseSplits")
 
     val nodeIdUpdaters = if (nodeIdCache.nonEmpty) {
-      Array.fill[mutable.Map[Int, NodeIndexUpdater]](
-        metadata.numTrees)(mutable.Map[Int, NodeIndexUpdater]())
+      Array.fill[mutable.Map[Int, MyNodeIndexUpdater]](
+        metadata.numTrees)(mutable.Map[Int, MyNodeIndexUpdater]())
     } else {
       null
     }
@@ -745,7 +745,7 @@ object MyDecisionTree extends Serializable with Logging {
             stats.rightPredict, stats.rightImpurity, rightChildIsLeaf))
 
           if (nodeIdCache.nonEmpty) {
-            val nodeIndexUpdater = NodeIndexUpdater(
+            val nodeIndexUpdater = MyNodeIndexUpdater(
               split = split,
               nodeIndex = nodeIndex)
             nodeIdUpdaters(treeIndex).put(nodeIndex, nodeIndexUpdater)

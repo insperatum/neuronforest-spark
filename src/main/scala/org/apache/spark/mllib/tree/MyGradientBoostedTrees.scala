@@ -149,8 +149,8 @@ object MyGradientBoostedTrees extends Logging {
     val numIterations = boostingStrategy.numIterations
     val treesPerIteration = boostingStrategy.treesPerIteration
     val initialTrees = boostingStrategy.initialTrees
-    val baseLearners = new Array[MyRandomForestModel](numIterations)
-    val baseLearnerWeights = new Array[Double](numIterations)
+    val baseLearners = new Array[MyRandomForestModel](numIterations + 1)
+    val baseLearnerWeights = new Array[Double](numIterations + 1)
     val loss = boostingStrategy.loss
     val learningRate = boostingStrategy.learningRate
     // Prepare strategy for individual trees, which use regression with variance impurity.
@@ -199,22 +199,22 @@ object MyGradientBoostedTrees extends Logging {
     //data.map(d => (d.idx, d.label)).take(10).foreach(println)
     //println(data.map(d => abs(d.label._1) + abs(d.label._2) + abs(d.label._3)).reduce(_+_))
     //println(input.count())
-    var m = 0
-    while (m < numIterations) {
-      timer.start(s"building tree $m")
+    var m = 1
+    while (m <= numIterations) {
+      timer.start(s"building tree ${m}")
       println("###################################################")
-      println("Gradient boosting tree iteration " + m + " of " + numIterations)
+      println("Gradient boosting tree iteration " + (m) + " of " + numIterations)
       println("###################################################")
       data.mapPartitionsWithIndex { (i, _) => {
         println("###################################################")
-        println("Partition " + i + ", Gradient boosting tree iteration " + m)
+        println("Partition " + i + ", Gradient boosting tree iteration " + (m))
         println("###################################################")
         Iterator()
       }}.count()
 
       val model = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
         1, numFeatures, numExamples, splits, bins)
-      timer.stop(s"building tree $m")
+      timer.stop(s"building tree ${m}")
       println("Finished building tree")
       // Create partial model
       baseLearners(m) = model
@@ -226,7 +226,7 @@ object MyGradientBoostedTrees extends Logging {
 
       println("Training partial model")
       val partialModel = new MyGradientBoostedTreesModel(
-        Regression, baseLearners.slice(0, m + 1), baseLearnerWeights.slice(0, m + 1))
+        Regression, baseLearners.slice(0, m), baseLearnerWeights.slice(0, m))
       logDebug("error of gbt = " + loss.computeError(partialModel, input))
       // Update data with pseudo-residuals
 //      data = input.map(point => MyLabeledPoint(loss.gradient(partialModel, point) * -1,
@@ -235,7 +235,7 @@ object MyGradientBoostedTrees extends Logging {
       m += 1
 
       uncacheData()
-      if(m < numIterations) {
+      if(m <= numIterations) {
         println("Finding gradient")
         data = loss.gradient(partialModel, input,
           if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m
