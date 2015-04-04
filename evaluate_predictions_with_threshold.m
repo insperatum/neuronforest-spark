@@ -1,81 +1,21 @@
-function evaluate_predictions(files, dims, description)
-    initial_thresholds = -0.5:0.4:1.5;
-     min_step = 0.002;
-%    min_step = 0.1;
-    
-    f = fopen([files{1} '/../errors_new.txt'], 'w');
+function evaluate_predictions_with_threshold(files, dims, description, threshold)
+    f = fopen([files{1} '/../errors_new_threshold.txt'], 'w');
     saveAndPrint(f, 'Description:\n%s\n\n', description);
+    saveAndPrint(f, 'Using Threshold:%0.3f\n\n', threshold);
     
     [r_thresholds, r_fscore, r_tp, r_fp, r_pos, r_neg, ~] = ...
-        evaluate_thresholds(files, dims, initial_thresholds, 'rand', min_step);
+        evaluate_thresholds(files, dims, threshold, 'rand', 0);
     
     [p_thresholds, p_err, p_tp, p_fp, p_pos, p_neg, p_sqerr] = ...
-        evaluate_thresholds(files, dims, initial_thresholds, 'pixel', min_step);
+        evaluate_thresholds(files, dims, threshold, 'pixel', 0);
     
-    saveAndPrint(f, 'Mean Pixel Square Error: %f\n', p_sqerr);
+    e = r_fscore;
+    saveAndPrint(f, 'Rand F-score: %f\n', e);
     
-    [e, idx] = max(r_fscore);
-    best_threshold = r_thresholds(idx);
-    saveAndPrint(f, 'Best Threshold for Rand F-score: %f\n', best_threshold);
-    saveAndPrint(f, 'Best Rand F-score: %f\n', e);
-    
-    [e, idx] = min(p_err);
-    best_threshold = p_thresholds(idx);
-    saveAndPrint(f, 'Best Threshold for Pixel Error: %f\n', best_threshold);
-    saveAndPrint(f, 'Best Pixel Error: %f\n', e);
-    
-    
-    min_threshold_idx = floor((length(initial_thresholds)+1)/2);
-    max_threshold_idx = ceil(length(r_thresholds) + 1 - min_threshold_idx);
-    
-    clf;
-    plt = subplot(2,2,1);
-    plot(r_thresholds, r_fscore);
-    title('Rand F-Score');
-    xlabel('Threshold');
-    ylabel('Rand F-Score');
-    xlim([r_thresholds(min_threshold_idx), r_thresholds(max_threshold_idx)]);
-    ylim([0, 1]);
-    
-    subplot(2,2,2);
-    r_fp_rate = r_fp/r_neg;
-    [r_fp_rate, idxs] = sort(r_fp_rate);
-    r_tp_rate = r_tp(idxs)/r_pos;
-    while(any(diff(r_tp_rate)<=0))
-        r_fp_rate = r_fp_rate(diff([-inf r_tp_rate])>0);
-        r_tp_rate = r_tp_rate(diff([-inf r_tp_rate])>0);
-    end
-    plot(r_fp_rate, r_tp_rate);
-    title('Rand Error ROC');
-    xlabel('False Positive');
-    ylabel('True Positive');
-    xlim([0, 1]);
-    ylim([0, 1]);
-    
-    subplot(2,2,3);
-    plot(p_thresholds, p_err);
-    title('Pixel Error');
-    xlabel('Threshold');
-    ylabel('Pixel Error');
-    xlim([p_thresholds(min_threshold_idx), p_thresholds(max_threshold_idx)]);
-    ylim([0, 1]);
-
-    subplot(2,2,4);
-    plot(p_fp/p_neg, p_tp/p_pos);
-    title('Pixel Error ROC');
-    xlabel('False Positive');
-    ylabel('True Positive');
-    xlim([0, 1]);
-    ylim([0, 1]);
-    
-    saveas(plt, [files{1} '/../errors_new.fig']);
-    saveas(plt, [files{1} '/../errors_new.png'], 'png');
+    e = p_err;
+    saveAndPrint(f, 'Pixel Error: %f\n', e);
     
     fclose(f);
-    
-    save([files{1} '/../errors_new.mat'], ...
-        'r_thresholds', 'r_fscore', 'r_tp', 'r_fp', 'r_pos', 'r_neg', ...
-        'p_thresholds', 'p_err', 'p_tp', 'p_fp', 'p_pos', 'p_neg', 'p_sqerr');
 end
 
 function saveAndPrint(varargin)
@@ -121,22 +61,24 @@ evaluate_thresholds(files, dims, thresholds, randOrPixel, min_step)
         [best_err, idx] = min(err);
     end
 
-    step = thresholds(2) - thresholds(1);
-    best_threshold = thresholds(idx);
-    fprintf('Thresholds = %f:%f:%f, Best %s = %f\n', thresholds(1), step, thresholds(end), randOrPixel, best_err);
+    if(length(thresholds)>1)
+        step = thresholds(2) - thresholds(1);
+        best_threshold = thresholds(idx);
+        fprintf('Thresholds = %f:%f:%f, Best %s = %f\n', thresholds(1), step, thresholds(end), randOrPixel, best_err);
 
-    if(step > min_step)
-        new_step = 2 * step/(length(thresholds)-1);
-        inner_thresholds = best_threshold-step:new_step:best_threshold+step;
-        [thresholds_, err_, tp_, fp_, ~, ~, ~] = ...
-            evaluate_thresholds(files, dims, inner_thresholds, randOrPixel, min_step);
-        
-        thresholds = [thresholds(1:idx-1), thresholds_, thresholds(idx+1:end)];
-        err = [err(1:idx-1), err_, err(idx+1:end)];
-        tp = [tp(1:idx-1), tp_, tp(idx+1:end)];
-        fp = [fp(1:idx-1), fp_, fp(idx+1:end)];
-    else
-        fprintf('\n');
+        if(step > min_step)
+            new_step = 2 * step/(length(thresholds)-1);
+            inner_thresholds = best_threshold-step:new_step:best_threshold+step;
+            [thresholds_, err_, tp_, fp_, ~, ~, ~] = ...
+                evaluate_thresholds(files, dims, inner_thresholds, randOrPixel, min_step);
+
+            thresholds = [thresholds(1:idx-1), thresholds_, thresholds(idx+1:end)];
+            err = [err(1:idx-1), err_, err(idx+1:end)];
+            tp = [tp(1:idx-1), tp_, tp(idx+1:end)];
+            fp = [fp(1:idx-1), fp_, fp(idx+1:end)];
+        else
+            fprintf('\n');
+        end
     end
 end
 

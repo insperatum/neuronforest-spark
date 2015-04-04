@@ -1,7 +1,14 @@
-for expt = {'2015-04-06 12-31-04/predictions', ...
-            '2015-04-06 14-04-13/predictions', ...
-            '2015-04-06 17-59-35/predictions'}
-    dir1 = ['/masters_predictions/' expt{1}];
+for expt = {'2015-04-02 15-27-28', ...
+            '2015-04-06 12-31-04', ...
+            '2015-04-06 14-04-13', ...
+            '2015-04-06 17-59-35', ...
+            '2015-04-02 00-47-01', ...
+            '2015-04-02 00-47-01', ...
+            '2015-04-01 23-34-27', ...
+            '2015-04-05 14-54-08', ...
+            '2015-04-05 16-01-43'
+            }
+    dir1 = ['/masters_predictions/' expt{1} '/predictions'];
     files1 = dir(dir1);
     for i = 3:length(files1)
         partial = files1(i).name;
@@ -14,13 +21,10 @@ for expt = {'2015-04-06 12-31-04/predictions', ...
             for k = 3:length(files3)
                 trainortest = files3(k).name;
                 root = [dir3 '/' trainortest];
-
-                if(exist([root '/errors.mat'], 'file') == 2)
+                 if(exist([root '/errors_new.mat'], 'file') == 2)
                     fprintf([root ' already evaluated. ignoring\n']);
-                else
-                    %%
+                 else
                     description = fileread([root '/0/description.txt']);
-
                     fprintf('\nExperiment: %s\n', root);
                     files4 = dir(root);
                     a = {};
@@ -31,8 +35,7 @@ for expt = {'2015-04-06 12-31-04/predictions', ...
                     end
                     dims = get_dimensions(a);
                     evaluate_predictions(a, dims, description)
-                    %%
-                end
+                 end
             end
         end
     end
