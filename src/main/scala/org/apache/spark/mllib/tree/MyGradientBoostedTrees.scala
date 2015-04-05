@@ -148,6 +148,7 @@ object MyGradientBoostedTrees extends Logging {
     boostingStrategy.assertValid()
 
     // Initialize gradient boosting parameters
+
     val numIterations = boostingStrategy.numIterations
     val treesPerIteration = boostingStrategy.treesPerIteration
     val initialTrees = boostingStrategy.initialTrees
@@ -155,6 +156,8 @@ object MyGradientBoostedTrees extends Logging {
     val baseLearnerWeights = new Array[Double](numIterations + 1)
     val loss = boostingStrategy.loss
     val learningRate = boostingStrategy.learningRate
+    val momentum = boostingStrategy.momentum
+
     // Prepare strategy for individual trees, which use regression with variance impurity.
     val forestStrategy = boostingStrategy.forestStrategy.copy
     forestStrategy.algo = Regression
@@ -247,6 +250,10 @@ object MyGradientBoostedTrees extends Logging {
         val (d2, unc2) = NeuronUtils.cached(data)
         data = d2
         uncacheData = unc2
+      }
+
+      for(i <- 1 until m) {
+        baseLearnerWeights(i) = baseLearnerWeights(i) + learningRate * math.pow(momentum, m-i)
       }
 
     }

@@ -44,7 +44,8 @@ case class MyBoostingStrategy(
     @BeanProperty var initialTrees: Int = 1,
     @BeanProperty var numIterations: Int = 50,
     @BeanProperty var treesPerIteration: Int = 1,
-    @BeanProperty var learningRate: Double = 0.1) extends Serializable {
+    @BeanProperty var learningRate: Double = 0.1,
+    @BeanProperty var momentum: Double = 0) extends Serializable {
 
   /**
    * Check validity of parameters.

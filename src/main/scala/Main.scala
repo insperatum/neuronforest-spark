@@ -46,11 +46,12 @@ object Main {
     } else {
       println("Training a Gradient boosted model")
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.initialTrees, s.iterations, s.treesPerIteration, s.malisGrad)
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.initialTrees, s.iterations,
+        s.treesPerIteration, s.malisSettings.learningRate, s.malisSettings.momentum)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-        dimensions_train.map(_.n_targets).sum, splits, bins, s.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
+        dimensions_train.map(_.n_targets).sum, splits, bins, s.malisSettings.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
 
     } /*else {
       println(s.mode + " is not a valid mode!")
@@ -156,10 +157,13 @@ object Main {
 
   // -----------------------------------------------------------------------
 
+  case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double)
+
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialTrees:Int, treesPerIteration:Int,
-                         dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
-                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int], useNodeIdCache:Boolean, subsampleProportion:Double) {
+                         dimOffsets:Seq[Int], master:String, trainFraction:Double,
+                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
+                         useNodeIdCache:Boolean, malisSettings:MalisSettings) {
     def toVerboseString =
       "RunSettings:\n" +
       " maxMemoryInMB = " + maxMemoryInMB + "\n" +
@@ -177,13 +181,14 @@ object Main {
       " dimOffsets = "    + dimOffsets.toList + "\n" +
       " master = "    + master + "\n" +
       " trainFraction = "    + trainFraction + "\n" +
-      " malisGrad = "    + malisGrad + "\n" +
+      " malisGrad = "    + malisSettings.learningRate + "\n" +
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
       " testPartialModels = " + testPartialModels + "\n" +
       " testDepths = " + testDepths + "\n" +
       " useNodeIdCache = " + useNodeIdCache + "\n" +
-    " subsampleProportion = " + subsampleProportion
+      " subsampleProportion = " + malisSettings.subsampleProportion + "\n" +
+      " momentum = " + malisSettings.momentum
   }
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
@@ -213,13 +218,17 @@ object Main {
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
-      malisGrad     = m.getOrElse("malisGrad",     "100").toDouble,
       iterations    = m.getOrElse("iterations", "1").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt),
       testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
-      subsampleProportion = m.getOrElse("subsampleProportion", "1").toDouble
+      malisSettings = MalisSettings(
+        learningRate     = m.getOrElse("malisGrad",     "100").toDouble,
+        subsampleProportion = m.getOrElse("subsampleProportion", "1").toDouble,
+        momentum = m.getOrElse("momentum", "0").toDouble
+      )
+
     )
   }
 }
