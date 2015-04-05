@@ -15,11 +15,12 @@ object MalisLoss extends MyLoss {
 
   def gradient(model: MyModel,
                points: RDD[MyTreePoint],
+              subsample_proportion: Double,
                save_to:String = null): RDD[(MyTreePoint, Double3)] = {
     val preds = model.predict(points.map(_.getFeatureVector))
     val g = points.zip(preds).mapPartitionsWithIndex((i, k) => {
       println("Gradient for partition " + i + "...")
-      grad(k.toArray, if (save_to == null) null else save_to + "/" + i).toIterator
+      grad(k.toArray, subsample_proportion, if (save_to == null) null else save_to + "/" + i).toIterator
     })
 
     //make and save segs
@@ -43,7 +44,7 @@ object MalisLoss extends MyLoss {
 
   case class Edge(point:MyTreePoint, weight:Double, from:Int, to:Int, dir:Int)
 
-  def grad(pointsAndPreds: Array[(MyTreePoint, Double3)], save_to:String) = {
+  def grad(pointsAndPreds: Array[(MyTreePoint, Double3)], subsample_proportion:Double = 1, save_to:String) = {
     val subvolume_size = 20
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
@@ -53,7 +54,8 @@ object MalisLoss extends MyLoss {
 
     val submaps = for(x <- 0 to dimensions._1/subvolume_size;
         y <- 0 to dimensions._2/subvolume_size;
-        z <- 0 to dimensions._3/subvolume_size) yield {
+        z <- 0 to dimensions._3/subvolume_size;
+        if math.random < subsample_proportion) yield {
       val minIdx = (x * subvolume_size, y * subvolume_size, z * subvolume_size)
       val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
       val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)

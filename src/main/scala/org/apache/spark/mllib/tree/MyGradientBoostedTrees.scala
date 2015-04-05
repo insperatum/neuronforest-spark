@@ -82,9 +82,10 @@ class MyGradientBoostedTrees(private val boostingStrategy: MyBoostingStrategy)
           numExamples:Int,
           splits:Array[Array[Split]],
           bins:Array[Array[Bin]],
+         subsample_proportion: Double,
           featureSubsetStrategy:String = "all",
           save_gradients_to:String = null) = {
-    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, featureSubsetStrategy, save_gradients_to)
+    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, subsample_proportion, featureSubsetStrategy, save_gradients_to)
   }
 
 
@@ -136,6 +137,7 @@ object MyGradientBoostedTrees extends Logging {
       numExamples:Int,
       splits:Array[Array[Split]],
       bins:Array[Array[Bin]],
+      subsample_proportion:Double,
       featureSubsetStrategy:String = "all",
       save_gradients_to:String = null) = {
 
@@ -188,7 +190,7 @@ object MyGradientBoostedTrees extends Logging {
 
     // psuedo-residual for second iteration
 
-    data = loss.gradient(startingModel, input, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
+    data = loss.gradient(startingModel, input, subsample_proportion, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
       p.copy(label = grad)
     }}
     val (d, unc) = NeuronUtils.cached(data)
@@ -237,7 +239,7 @@ object MyGradientBoostedTrees extends Logging {
       uncacheData()
       if(m <= numIterations) {
         println("Finding gradient")
-        data = loss.gradient(partialModel, input,
+        data = loss.gradient(partialModel, input, subsample_proportion,
           if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m
         ).map { case (p, grad) => {
           p.copy(label = grad)

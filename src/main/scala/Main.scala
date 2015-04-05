@@ -50,7 +50,7 @@ object Main {
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-        dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
+        dimensions_train.map(_.n_targets).sum, splits, bins, s.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
 
     } /*else {
       println(s.mode + " is not a valid mode!")
@@ -159,7 +159,7 @@ object Main {
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialTrees:Int, treesPerIteration:Int,
                          dimOffsets:Seq[Int], master:String, trainFraction:Double, malisGrad:Double,
-                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int], useNodeIdCache:Boolean) {
+                         iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int], useNodeIdCache:Boolean, subsampleProportion:Double) {
     def toVerboseString =
       "RunSettings:\n" +
       " maxMemoryInMB = " + maxMemoryInMB + "\n" +
@@ -182,7 +182,8 @@ object Main {
       " saveGradients = " + saveGradients + "\n" +
       " testPartialModels = " + testPartialModels + "\n" +
       " testDepths = " + testDepths + "\n" +
-      " useNodeIdCache = " + useNodeIdCache
+      " useNodeIdCache = " + useNodeIdCache + "\n" +
+    " subsampleProportion = " + subsampleProportion
   }
 
   def getSettingsFromArgs(args:Array[String]):RunSettings = {
@@ -217,7 +218,8 @@ object Main {
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt),
       testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt),
-      useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean
+      useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
+      subsampleProportion = m.getOrElse("subsampleProportion", "1").toDouble
     )
   }
 }
