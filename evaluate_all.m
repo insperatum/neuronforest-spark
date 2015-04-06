@@ -1,13 +1,13 @@
-%11 trees, 0 offsets;  11 trees, -2,0,2;   11 iterations, 0 offsets;
-for expt = {'2015-03-27 03-42-56/predictions', ...
-            '2015-03-27 05-12-31/predictions'}
+for expt = {'2015-04-06 12-31-04/predictions', ...
+            '2015-04-06 14-04-13/predictions', ...
+            '2015-04-06 17-59-35/predictions'}
     dir1 = ['/masters_predictions/' expt{1}];
     files1 = dir(dir1);
     for i = 3:length(files1)
         partial = files1(i).name;
         dir2 = [dir1 '/' partial];
         files2 = dir(dir2);
-        for j = 4 %3:length(files2)           
+        for j = 3:length(files2)           
             depth = files2(j).name;
             dir3 = [dir2 '/' depth];
             files3 = dir(dir3);
