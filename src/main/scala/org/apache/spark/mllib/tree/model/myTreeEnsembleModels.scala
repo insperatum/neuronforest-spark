@@ -55,9 +55,9 @@ class MyRandomForestModel(override val algo: Algo, val trees: Array[MyDecisionTr
 @Experimental
 class MyGradientBoostedTreesModel(
     override val algo: Algo,
-    override val elems: Array[MyRandomForestModel],
+    override val elems: Array[MyEnsembleModel[_]],
     override val treeWeights: Array[Double])
-  extends MyEnsembleModel[MyRandomForestModel](algo, elems, treeWeights, combiningStrategy = Sum) {
+  extends MyEnsembleModel[MyEnsembleModel[_]](algo, elems, treeWeights, combiningStrategy = Sum) {
 
   require(elems.size == treeWeights.size)
 }

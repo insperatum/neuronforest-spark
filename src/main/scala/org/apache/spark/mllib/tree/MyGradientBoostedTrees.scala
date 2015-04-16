@@ -22,7 +22,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.regression.MyLabeledPoint
 import org.apache.spark.mllib.tree.configuration.Algo._
-import org.apache.spark.mllib.tree.configuration.MyBoostingStrategy
+import org.apache.spark.mllib.tree.configuration.{InitialLoadedModel, InitialTrainModel, MyBoostingStrategy}
 import org.apache.spark.mllib.tree.impl.{MyTreePoint, TimeTracker}
 import org.apache.spark.mllib.tree.impurity.{MyVariance, Variance}
 import org.apache.spark.mllib.tree.loss.MalisLoss
@@ -151,8 +151,8 @@ object MyGradientBoostedTrees extends Logging {
 
     val numIterations = boostingStrategy.numIterations
     val treesPerIteration = boostingStrategy.treesPerIteration
-    val initialTrees = boostingStrategy.initialTrees
-    val baseLearners = new Array[MyRandomForestModel](numIterations + 1)
+    val initialModel = boostingStrategy.initialModel
+    val baseLearners = new Array[MyEnsembleModel[_]](numIterations + 1)
     val baseLearnerWeights = new Array[Double](numIterations + 1)
     val loss = boostingStrategy.loss
     val learningRate = boostingStrategy.learningRate
@@ -181,8 +181,12 @@ object MyGradientBoostedTrees extends Logging {
     timer.start("building tree 0")
 //    val firstTreeModel = new MyRandomForest(forestStrategy, treesPerIteration, featureSubsetStrategy, 1).
 //      trainFromMyTreePoints(data, numFeatures, numExamples, splits, bins)
-    val firstTreeModel = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, initialTrees, featureSubsetStrategy,
-      1, numFeatures, numExamples, splits, bins)
+    val firstTreeModel = initialModel match {
+      case m:InitialTrainModel => MyRandomForest.trainRegressorFromTreePoints(
+        data, forestStrategy, m.initialTrees, featureSubsetStrategy, 1, numFeatures, numExamples, splits, bins)
+      case m:InitialLoadedModel =>
+        m.load()
+    }
 
     baseLearners(0) = firstTreeModel
     baseLearnerWeights(0) = 1.0

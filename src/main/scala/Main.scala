@@ -1,4 +1,5 @@
 import java.io
+import java.io._
 import java.text.SimpleDateFormat
 import java.util.{Date, Calendar}
 
@@ -7,7 +8,7 @@ import org.apache.spark.mllib.tree.model._
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
 import org.apache.spark.mllib.tree.{RandomForest, MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
-import org.apache.spark.mllib.tree.configuration.{MyBoostingStrategy, MyStrategy, Strategy}
+import org.apache.spark.mllib.tree.configuration._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.mllib.tree.impurity._
@@ -39,24 +40,28 @@ object Main {
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 
     val model: MyEnsembleModel[_] = if (s.iterations == 0) {
-      println("Training a Random Forest Model (no gradient boosting)")
-      //    Random Forest
-      MyRandomForest.trainRegressorFromTreePoints(train, strategy, s.initialTrees, s.featureSubsetStrategy: String, 1,
-        nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+      s.initialModel match {
+        case m:InitialTrainModel =>
+          println("Training a Random Forest Model (no gradient boosting)")
+          //    Random Forest
+          MyRandomForest.trainRegressorFromTreePoints(train, strategy, m.initialTrees, s.featureSubsetStrategy: String, 1,
+            nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+        case m:InitialLoadedModel => m.load()
+      }
+
     } else {
       println("Training a Gradient boosted model")
       //    Gradient Boosting
-      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.initialTrees, s.iterations,
+      val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.initialModel, s.iterations,
         s.treesPerIteration, s.malisSettings.learningRate, s.malisSettings.momentum)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
         dimensions_train.map(_.n_targets).sum, splits, bins, s.malisSettings.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
 
-    } /*else {
-      println(s.mode + " is not a valid mode!")
-      ???
-    }*/
+    }
+
+
     val training_time = (System.currentTimeMillis() - start_time)/60000
     println("Trained (took " + training_time + " minutes.")
 
@@ -149,19 +154,33 @@ object Main {
       }
     }
 
-    println("Job complete. Saved to: " + s.save_to + "/" + timestr)
 
+    println("Job complete. Saved to: " + s.save_to + "/" + timestr)
     println("Job took: " + ((System.currentTimeMillis() - start_time)/60000) + " minutes")
+
+    val model_dir = s.save_model_to + "/" + timestr
+    println("\nSaving model to " + model_dir)
+    new io.File(model_dir).mkdirs()
+
+    val fos = new FileOutputStream(model_dir + "/model.txt")
+    val oos = new ObjectOutputStream(fos)
+    oos.writeObject(model)
+    oos.close()
+
+    val fwdescription = new FileWriter(model_dir + "/description.txt", false)
+    fwdescription.write(s.toVerboseString)
+    fwdescription.write("\nTraining took " + training_time + " minutes.")
+    fwdescription.close()
+    println("Saved")
   }
 
 
   // -----------------------------------------------------------------------
 
   case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double)
-
   case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
-                         impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialTrees:Int, treesPerIteration:Int,
-                         dimOffsets:Seq[Int], master:String, trainFraction:Double,
+                         impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel, treesPerIteration:Int,
+                         dimOffsets:Seq[Int], master:String, trainFraction:Double, save_model_to:String,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
                          useNodeIdCache:Boolean, malisSettings:MalisSettings) {
     def toVerboseString =
@@ -170,13 +189,14 @@ object Main {
       " localDir = " + localDir + "\n" +
       " data_root = "     + data_root + "\n" +
       " save_to = "       + save_to + "\n" +
+      " save_model_to = " + save_model_to + "\n" +
       " subvolumes = "    + subvolumes.toList + "\n" +
       " featureSubsetStrategy = "    + featureSubsetStrategy + "\n" +
       " impurity = "    + impurity + "\n" +
       " maxDepth = "    + maxDepth + "\n" +
       " maxBins = "    + maxBins + "\n" +
       " nBaseFeatures = "    + nBaseFeatures + "\n" +
-    "   initialTrees = "    + initialTrees + "\n" +
+      " initialModel = "    + initialModel + "\n" +
       " treesPerIteration = "    + treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
       " master = "    + master + "\n" +
@@ -200,6 +220,7 @@ object Main {
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
       data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
       save_to       = m.getOrElse("save_to",       "/masters_predictions"),
+      save_model_to = m.getOrElse("save_model_to", "/masters_models"),
       localDir      = m.getOrElse("localDir",     "/tmp"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = {
@@ -213,15 +234,17 @@ object Main {
       maxDepth      = m.getOrElse("maxDepth",      "14").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,
-      initialTrees  = m.getOrElse("initialTrees",          "10").toInt,
+      initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
+                      if(m.contains("loadModel")) InitialLoadedModel(m("loadModel"))
+                      else InitialTrainModel(m.getOrElse("initialTrees",  "10").toInt),
       treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
-      iterations    = m.getOrElse("iterations", "1").toInt,
+      iterations    = m.getOrElse("iterations", "0").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
-      testPartialModels = m.getOrElse("testPartialModels", "").split(",").map(_.toInt),
-      testDepths    = m.getOrElse("testDepths", "").split(",").map(_.toInt),
+      testPartialModels = m.getOrElse("testPartialModels", "").split(",").filter(! _.isEmpty).map(_.toInt),
+      testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
       malisSettings = MalisSettings(
         learningRate     = m.getOrElse("malisGrad",     "100").toDouble,

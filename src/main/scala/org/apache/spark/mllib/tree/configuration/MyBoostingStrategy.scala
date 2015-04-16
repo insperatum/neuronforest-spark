@@ -41,7 +41,7 @@ case class MyBoostingStrategy(
     @BeanProperty var forestStrategy: MyStrategy,
     @BeanProperty var loss: MyLoss,
     // Optional boosting parameters
-    @BeanProperty var initialTrees: Int = 1,
+    @BeanProperty var initialModel: InitialModel = InitialTrainModel(1),
     @BeanProperty var numIterations: Int = 50,
     @BeanProperty var treesPerIteration: Int = 1,
     @BeanProperty var learningRate: Double = 0.1,
