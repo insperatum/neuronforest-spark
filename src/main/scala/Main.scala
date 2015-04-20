@@ -7,7 +7,7 @@ import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.mllib.tree.model._
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.tree.loss.MalisLoss
-import org.apache.spark.mllib.tree.{RandomForest, MyGradientBoostedTrees, MyRandomForest, NeuronUtils}
+import org.apache.spark.mllib.tree._
 import org.apache.spark.mllib.tree.configuration._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkConf}
@@ -39,7 +39,7 @@ object Main {
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 
-    val model: MyEnsembleModel[_] = if (s.iterations == 0) {
+    val model: MyEnsembleModelNew[_] = if (s.iterations == 0) {
       s.initialModel match {
         case m:InitialTrainModel =>
           println("Training a Random Forest Model (no gradient boosting)")
@@ -88,37 +88,57 @@ object Main {
     //-------------------------- Test ---------------------------------------
     val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
 
-    val allPartialModels:Seq[MyEnsembleModel[_]] = model.getPartialModels
-    println("There are " + allPartialModels.size + " partial models")
+//    val allPartialModels:Seq[MyEnsembleModelNew[_]] = model.getPartialModels
+
+//    println("There are " + allPartialModels.size + " partial models")
 
     val (train_cached, _) = NeuronUtils.cached(train)
     val (test_cached, _) = NeuronUtils.cached(test)
 
-    val testPartialModels = (s.testPartialModels :+ allPartialModels.size).distinct //ensure that the final model is tested
+    //val testPartialModels = (s.testPartialModels :+ allPartialModels.size).distinct //ensure that the final model is tested
+    val testPartialModels = s.testPartialModels
     val testDepths = if(s.testDepths.isEmpty) Seq(Integer.MAX_VALUE) else s.testDepths
 
-    var i=0
-    while(i < testPartialModels.size) { //shit goes weird when I use a for loop. WHY? todo:INVESTIGATE
-      val partialModel = allPartialModels(testPartialModels(i)-1)
-      i+=1
-      var j = 0
-      while (j < testDepths.size) { // WHYYYY???
-        val depth = testDepths(j)
-        j += 1
+    val partialSegments:Seq[MyEnsembleModelNew[_]] = model.getPartialSegments(testPartialModels)
 
-        val nElems = partialModel.nElems
-        partialModel.elems.head match {
-          case _: MyDecisionTreeModel => partialModel.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth))
-          case _: MyRandomForestModel => partialModel.elems.foreach(_.asInstanceOf[MyRandomForestModel].trees.foreach(_.capDepth(depth)))
-        }
+    var j = 0
+    while (j < testDepths.size) { // WHYYYY???
+      val depth = testDepths(j)
+      j += 1
+
+
+      model.elems.head match {
+        case _: MyDecisionTreeModel =>
+          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
+//          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
+        case _: MyRandomForestModelNew =>
+          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
+//          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
+      }
+
+      var i=0
+      var nElems = 0
+      var weightSum = 0
+      var currentPredictionsTrain = train_cached.map { point => Double3.Zero }
+      var currentPredictionsTest = test_cached.map { point => Double3.Zero }
+      while(i < testPartialModels.size) { //shit goes weird when I use a for loop. WHY? todo:INVESTIGATE
+        val partialSegment = partialSegments(i)
+//        val partialModel = allPartialModels(testPartialModels(i) - 1)
+        i+=1
+        nElems = nElems + partialSegment.nElems
+
         println("\nTesting partial model with " + nElems + " elements, at depth " + depth)
 
         // Training Error
-        val trainLabelsAndPredictions = train_cached.map { point =>
+        val trainLabelsAndPredictions = (train_cached zip currentPredictionsTrain).map {case (point, currentPrediction) =>
           val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-          val prediction = partialModel.predict(Vectors.dense(features))
+          val segmentPrediction = partialSegment.predict(Vectors.dense(features))
+          val prediction = if(partialSegment.isSum) currentPrediction + segmentPrediction
+                           else if(nElems == partialSegment.nElems) segmentPrediction
+                           else (currentPrediction * (nElems - partialSegment.nElems) + segmentPrediction * partialSegment.nElems) / nElems
           (point.label, prediction)
         }.cache()
+
         if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + i, p, dimensions_train(i), s.toVerboseString, training_time
@@ -128,15 +148,21 @@ object Main {
           println("Failed to save!")
           return
         }
+        currentPredictionsTrain.unpersist()
+        currentPredictionsTrain = trainLabelsAndPredictions.map(_._2).cache()
+        currentPredictionsTrain.count()
+
         val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
         println("Train Mean Squared Error = " + trainMSE)
         trainLabelsAndPredictions.unpersist()
 
-
         // Test Error
-        val testLabelsAndPredictions = test_cached.map { point =>
+        val testLabelsAndPredictions = (test_cached zip currentPredictionsTest).map {case (point, currentPrediction) =>
           val features = Array.tabulate[Double](nFeatures)(f => point.features(f))
-          val prediction = partialModel.predict(Vectors.dense(features))
+          val segmentPrediction = partialSegment.predict(Vectors.dense(features))
+          val prediction = if(partialSegment.isSum) currentPrediction + segmentPrediction
+          else if(nElems == partialSegment.nElems) segmentPrediction
+          else (currentPrediction * (nElems - partialSegment.nElems) + segmentPrediction * partialSegment.nElems) / nElems
           (point.label, prediction)
         }.cache()
         if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
@@ -148,6 +174,11 @@ object Main {
           println("Failed to save!")
           return
         }
+
+        currentPredictionsTest.unpersist()
+        currentPredictionsTest = testLabelsAndPredictions.map(_._2).cache()
+        currentPredictionsTest.count()
+
         val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
         println("Test Mean Squared Error = " + testMSE)
         testLabelsAndPredictions.unpersist()

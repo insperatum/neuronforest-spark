@@ -59,7 +59,7 @@ class MyGradientBoostedTrees(private val boostingStrategy: MyBoostingStrategy)
    * @param input Training dataset: RDD of [[org.apache.spark.mllib.regression.MyLabeledPoint]].
    * @return a gradient boosted trees model that can be used for prediction
    */
-  def run(input: RDD[MyLabeledPoint]): MyGradientBoostedTreesModel = {
+  def run(input: RDD[MyLabeledPoint]): MyGradientBoostedTreesModelNew = {
     ???
     /*
     val algo = boostingStrategy.treeStrategy.algo
@@ -92,7 +92,7 @@ class MyGradientBoostedTrees(private val boostingStrategy: MyBoostingStrategy)
   /**
    * Java-friendly API for [[org.apache.spark.mllib.tree.MyGradientBoostedTrees!#run]].
    */
-  def run(input: JavaRDD[MyLabeledPoint]): MyGradientBoostedTreesModel = {
+  def run(input: JavaRDD[MyLabeledPoint]): MyGradientBoostedTreesModelNew = {
     run(input.rdd)
   }
 }
@@ -111,7 +111,7 @@ object MyGradientBoostedTrees extends Logging {
    */
   def train(
       input: RDD[MyLabeledPoint],
-      boostingStrategy: MyBoostingStrategy): MyGradientBoostedTreesModel = {
+      boostingStrategy: MyBoostingStrategy): MyGradientBoostedTreesModelNew = {
     new MyGradientBoostedTrees(boostingStrategy).run(input)
   }
 
@@ -120,7 +120,7 @@ object MyGradientBoostedTrees extends Logging {
    */
   def train(
       input: JavaRDD[MyLabeledPoint],
-      boostingStrategy: MyBoostingStrategy): MyGradientBoostedTreesModel = {
+      boostingStrategy: MyBoostingStrategy): MyGradientBoostedTreesModelNew = {
     train(input.rdd, boostingStrategy)
   }
 
@@ -152,7 +152,7 @@ object MyGradientBoostedTrees extends Logging {
     val numIterations = boostingStrategy.numIterations
     val treesPerIteration = boostingStrategy.treesPerIteration
     val initialModel = boostingStrategy.initialModel
-    val baseLearners = new Array[MyEnsembleModel[_]](numIterations + 1)
+    val baseLearners = new Array[MyEnsembleModelNew[_]](numIterations + 1)
     val baseLearnerWeights = new Array[Double](numIterations + 1)
     val loss = boostingStrategy.loss
     val learningRate = boostingStrategy.learningRate
@@ -190,7 +190,7 @@ object MyGradientBoostedTrees extends Logging {
 
     baseLearners(0) = firstTreeModel
     baseLearnerWeights(0) = 1.0
-    val startingModel = new MyGradientBoostedTreesModel(Regression, Array(firstTreeModel), Array(1.0))
+    val startingModel = new MyGradientBoostedTreesModelNew(Regression, Array(firstTreeModel), Array(1.0))
     logDebug("error of gbt = " + loss.computeError(startingModel, input))
     // Note: A model of type regression is used since we require raw prediction
     timer.stop("building tree 0")
@@ -234,7 +234,7 @@ object MyGradientBoostedTrees extends Logging {
       // Note: A model of type regression is used since we require raw prediction
 
       println("Training partial model")
-      val partialModel = new MyGradientBoostedTreesModel(
+      val partialModel = new MyGradientBoostedTreesModelNew(
         Regression, baseLearners.slice(0, m), baseLearnerWeights.slice(0, m))
       logDebug("error of gbt = " + loss.computeError(partialModel, input))
       // Update data with pseudo-residuals
@@ -270,6 +270,6 @@ object MyGradientBoostedTrees extends Logging {
 //    (new MyGradientBoostedTreesModel(
 //      boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights), data, seg)
 
-    new MyGradientBoostedTreesModel(boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights)
+    new MyGradientBoostedTreesModelNew(boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights)
   }
 }

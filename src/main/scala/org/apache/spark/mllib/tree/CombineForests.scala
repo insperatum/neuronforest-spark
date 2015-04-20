@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import org.apache.spark.mllib.tree.configuration.{Algo, EnsembleCombiningStrategy}
-import org.apache.spark.mllib.tree.model.{MyDecisionTreeModel, MyRandomForestModel, MyEnsembleModel}
+import org.apache.spark.mllib.tree.model.{MyRandomForestModel, MyRandomForestModelNew, MyDecisionTreeModel, MyEnsembleModelNew}
 
 /**
  * Created by luke on 17/04/15.
@@ -63,12 +63,12 @@ object CombineForests {
       fwdescription.write(desc + "\n--------------------------------\n")
 
       println("Loaded " + file)
-      model
+      new MyRandomForestModelNew(model.algo, model.trees)
     }).flatMap(_.elems.toList)
     fwdescription.close()
 
     println("Creating Model")
-    val combinedModel = new MyRandomForestModel(Algo.Regression, elems.toArray)
+    val combinedModel = new MyRandomForestModelNew(Algo.Regression, elems.toArray)
 
     println("Writing Model")
     val fos = new FileOutputStream(save_to + "/model.txt")

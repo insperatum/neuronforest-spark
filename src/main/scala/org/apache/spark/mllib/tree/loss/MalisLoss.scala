@@ -3,7 +3,7 @@ package org.apache.spark.mllib.tree.loss
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.mllib.tree.{NeuronUtils, Indexer3D, Double3}
 import org.apache.spark.mllib.tree.impl.MyTreePoint
-import org.apache.spark.mllib.tree.model.MyTreeEnsembleModel
+import org.apache.spark.mllib.tree.model.MyTreeEnsembleModelNew
 import org.apache.spark.rdd.RDD
 
 import scala.collection.mutable

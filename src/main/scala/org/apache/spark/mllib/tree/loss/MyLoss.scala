@@ -22,7 +22,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.mllib.regression.MyLabeledPoint
 import org.apache.spark.mllib.tree.Double3
 import org.apache.spark.mllib.tree.impl.MyTreePoint
-import org.apache.spark.mllib.tree.model.{MyEnsembleModel, MyTreeEnsembleModel, TreeEnsembleModel}
+import org.apache.spark.mllib.tree.model.{MyEnsembleModelNew, MyTreeEnsembleModelNew, TreeEnsembleModel}
 import org.apache.spark.rdd.RDD
 
 /**
