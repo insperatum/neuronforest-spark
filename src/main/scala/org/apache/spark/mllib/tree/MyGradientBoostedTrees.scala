@@ -214,12 +214,12 @@ object MyGradientBoostedTrees extends Logging {
       println("###################################################")
       println("Gradient boosting tree iteration " + (m) + " of " + numIterations)
       println("###################################################")
-      data.mapPartitionsWithIndex { (i, _) => {
+      /*data.mapPartitionsWithIndex { (i, _) => {
         println("###################################################")
         println("Partition " + i + ", Gradient boosting tree iteration " + (m))
         println("###################################################")
         Iterator()
-      }}.count()
+      }}.count()*/
 
       val model = MyRandomForest.trainRegressorFromTreePoints(data, forestStrategy, treesPerIteration, featureSubsetStrategy,
         1, numFeatures, numExamples, splits, bins)

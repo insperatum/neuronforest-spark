@@ -35,15 +35,25 @@ evaluate_thresholds(files, dims, thresholds, randOrPixel, min_step)
     n_examples = nan(length(files), 1);
     %[err, tp, fp, pos, neg, p_sqerr] = get_stats(files{1}, thresholds, dims, randOrPixel);
     parfor i=1:length(files)
-        [err_, tp_, fp_, pos_, neg_, p_sqerr_, n_examples_] = get_stats(files{i}, thresholds, dims, randOrPixel);
-        err(i,:) = err_;
-        tp(i,:) = tp_;
-        fp(i,:) = fp_;
-        pos(i) = pos_;
-        neg(i)= neg_;
-        p_sqerr(i) = p_sqerr_;
-        n_examples(i) = n_examples_;
-%         fprintf(':O');
+        try 
+            [err_, tp_, fp_, pos_, neg_, p_sqerr_, n_examples_] = get_stats(files{i}, thresholds, dims, randOrPixel);
+            err(i,:) = err_;
+            tp(i,:) = tp_;
+            fp(i,:) = fp_;
+            pos(i) = pos_;
+            neg(i)= neg_;
+            p_sqerr(i) = p_sqerr_;
+            n_examples(i) = n_examples_;
+        catch
+            err(i,:) = 0;
+            tp(i,:) = 0;
+            fp(i,:) = 0;
+            pos(i) = 0;
+            neg(i)= 0;
+            p_sqerr(i) = 0;
+            n_examples(i) = 0;
+        end
+%          fprintf(':O');
     end
     
     tp = sum(bsxfun(@times, tp, n_examples));

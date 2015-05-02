@@ -85,6 +85,24 @@ object Main {
 //    println("trained.")
 
 
+
+    //-------------------------- Save Model ---------------------------------
+    if(s.save_model_to != "") {
+      val model_dir = s.save_model_to + "/" + timestr
+      println("\nSaving model to " + model_dir)
+      new io.File(model_dir).mkdirs()
+
+      val fos = new FileOutputStream(model_dir + "/model.txt")
+      val oos = new ObjectOutputStream(fos)
+      oos.writeObject(model)
+      oos.close()
+
+      val fwdescription = new FileWriter(model_dir + "/description.txt", false)
+      fwdescription.write(s.toVerboseString)
+      fwdescription.write("\nTraining took " + training_time + " minutes.")
+      fwdescription.close()
+      println("Saved")
+    }
     //-------------------------- Test ---------------------------------------
     val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
 
@@ -107,14 +125,24 @@ object Main {
       j += 1
 
 
-      model.elems.head match {
-        case _: MyDecisionTreeModel =>
-          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
-//          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
-        case _: MyRandomForestModelNew =>
-          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
-//          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
+      def capDepth(m: Any):Unit = {
+        model.elems.head match {
+          case _: MyDecisionTreeModel =>
+            partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
+          //          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
+          case _: MyEnsembleModel[_] =>
+            partialSegments.foreach(_.elems.foreach(x => capDepth(x)))
+          //          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
+        }
       }
+//      model.elems.head match {
+//        case _: MyDecisionTreeModel =>
+//          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
+////          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
+//        case _: MyRandomForestModelNew =>
+//          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
+////          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
+//      }
 
       var i=0
       var nElems = 0
@@ -152,8 +180,9 @@ object Main {
         currentPredictionsTrain = trainLabelsAndPredictions.map(_._2).cache()
         currentPredictionsTrain.count()
 
-        val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
-        println("Train Mean Squared Error = " + trainMSE)
+        //val trainMSE = trainLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
+        //println("Train Mean Squared Error = " + trainMSE)
+        println("Saved Train Predictions")
         trainLabelsAndPredictions.unpersist()
 
         // Test Error
@@ -179,8 +208,9 @@ object Main {
         currentPredictionsTest = testLabelsAndPredictions.map(_._2).cache()
         currentPredictionsTest.count()
 
-        val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
-        println("Test Mean Squared Error = " + testMSE)
+        //val testMSE = testLabelsAndPredictions.map { case (v, p) => (v - p).sq}.mean() / 3
+        //println("Test Mean Squared Error = " + testMSE)
+        println("Saved Test Predictions")
         testLabelsAndPredictions.unpersist()
       }
     }
@@ -189,20 +219,6 @@ object Main {
     println("Job complete. Saved to: " + s.save_to + "/" + timestr)
     println("Job took: " + ((System.currentTimeMillis() - start_time)/60000) + " minutes")
 
-    val model_dir = s.save_model_to + "/" + timestr
-    println("\nSaving model to " + model_dir)
-    new io.File(model_dir).mkdirs()
-
-    val fos = new FileOutputStream(model_dir + "/model.txt")
-    val oos = new ObjectOutputStream(fos)
-    oos.writeObject(model)
-    oos.close()
-
-    val fwdescription = new FileWriter(model_dir + "/description.txt", false)
-    fwdescription.write(s.toVerboseString)
-    fwdescription.write("\nTraining took " + training_time + " minutes.")
-    fwdescription.close()
-    println("Saved")
   }
 
 
@@ -250,8 +266,8 @@ object Main {
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
       data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
-      save_to       = m.getOrElse("save_to",       "/masters_predictions"),
-      save_model_to = m.getOrElse("save_model_to", "/masters_models"),
+      save_to       = m.getOrElse("save_to",       "/mnt/masters_predictions"),
+      save_model_to = m.getOrElse("save_model_to", "/mnt/masters_models"),
       localDir      = m.getOrElse("localDir",     "/tmp"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = {

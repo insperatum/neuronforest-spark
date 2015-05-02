@@ -57,13 +57,20 @@ object CombineForests {
     val elems = model_files.map(file => {
       val fis = new FileInputStream(file + "/model.txt")
       val ois = new ObjectInputStream(fis)
-      val model = ois.readObject().asInstanceOf[MyRandomForestModel]
 
       val desc = scala.io.Source.fromFile(file + "/description.txt").mkString
       fwdescription.write(desc + "\n--------------------------------\n")
-
-      println("Loaded " + file)
-      new MyRandomForestModelNew(model.algo, model.trees)
+      val modelAny = ois.readObject()
+      try {
+        val model = modelAny.asInstanceOf[MyRandomForestModel]
+        println("Loaded " + file)
+        new MyRandomForestModelNew(model.algo, model.trees)
+      } catch {
+        case e:ClassCastException =>
+          val model = modelAny.asInstanceOf[MyRandomForestModelNew]
+          println("Loaded " + file)
+          model
+      }
     }).flatMap(_.elems.toList)
     fwdescription.close()
 

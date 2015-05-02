@@ -1,13 +1,4 @@
-for expt = {'2015-04-02 15-27-28', ...
-            '2015-04-06 12-31-04', ...
-            '2015-04-06 14-04-13', ...
-            '2015-04-06 17-59-35', ...
-            '2015-04-02 00-47-01', ...
-            '2015-04-02 00-47-01', ...
-            '2015-04-01 23-34-27', ...
-            '2015-04-05 14-54-08', ...
-            '2015-04-05 16-01-43'
-            }
+for expt = {'2015-04-30 12-37-56'}
     dir1 = ['/masters_predictions/' expt{1} '/predictions'];
     files1 = dir(dir1);
     for i = 3:length(files1)
@@ -18,8 +9,9 @@ for expt = {'2015-04-02 15-27-28', ...
             depth = files2(j).name;
             dir3 = [dir2 '/' depth];
             files3 = dir(dir3);
-            for k = 3:length(files3)
-                trainortest = files3(k).name;
+%             for k = 3:length(files3)
+%                 trainortest = files3(k).name;
+                trainortest = 'train';
                 root = [dir3 '/' trainortest];
                  if(exist([root '/errors_new.mat'], 'file') == 2)
                     fprintf([root ' already evaluated. ignoring\n']);
@@ -34,9 +26,13 @@ for expt = {'2015-04-02 15-27-28', ...
                         end
                     end
                     dims = get_dimensions(a);
-                    evaluate_predictions(a, dims, description)
+                    try 
+                        evaluate_predictions(a, dims, description)
+                    catch
+                        fprintf('Failed to evaluate???\n')
+                    end
                  end
-            end
+%             end
         end
     end
 end

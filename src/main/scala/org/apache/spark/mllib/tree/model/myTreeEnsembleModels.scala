@@ -222,6 +222,7 @@ class MyEnsembleModelNew[T <: MyModel](
     new MyEnsembleModelNew(algo, elems.take(n), treeWeights.take(n), combiningStrategy))
 
   def getPartialSegments(testPartialModels:Seq[Int]):Seq[MyEnsembleModelNew[_]] = {
+    if(testPartialModels.isEmpty) Seq() else
     (0 +: testPartialModels.init).zip(testPartialModels).map{case (from, until) =>
       new MyEnsembleModelNew(algo, elems.drop(from).take(until-from), treeWeights.drop(from).take(until-from), combiningStrategy)
     }
