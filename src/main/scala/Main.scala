@@ -24,7 +24,7 @@ object Main {
     val s = getSettingsFromArgs(args)
     println("Settings:\n" + s.toVerboseString)
 
-    val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
+    val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets) yield (x, y)
     val nFeatures = s.nBaseFeatures * offsets.length
     val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.local.dir", s.localDir)
     if (!s.master.isEmpty) conf.setMaster(s.master)
@@ -34,8 +34,8 @@ object Main {
     val save_to = s.save_to + "/" + timestr
 
 //    //-------------------------- Train -------------------------------------
-    val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, s.trainFraction, bins, fromFront = true)
+    val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
+    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 
@@ -45,7 +45,7 @@ object Main {
           println("Training a Random Forest Model (no gradient boosting)")
           //    Random Forest
           MyRandomForest.trainRegressorFromTreePoints(train, strategy, m.initialTrees, s.featureSubsetStrategy: String, 1,
-            nFeatures, dimensions_train.map(_.n_targets).sum, splits, bins)
+            nFeatures, dimensions_train.map(_.map(_.n_targets).sum).sum, splits, bins)
         case m:InitialLoadedModel => m.load()
       }
 
@@ -57,7 +57,7 @@ object Main {
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-        dimensions_train.map(_.n_targets).sum, splits, bins, s.malisSettings.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
+        dimensions_train.map(_.map(_.n_targets).sum).sum, splits, bins, s.malisSettings.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
 
     }
 
@@ -104,7 +104,7 @@ object Main {
       println("Saved")
     }
     //-------------------------- Test ---------------------------------------
-    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1 - s.trainFraction, bins, fromFront = false)
+    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes.test, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = false)
 
 //    val allPartialModels:Seq[MyEnsembleModelNew[_]] = model.getPartialModels
 
@@ -114,14 +114,15 @@ object Main {
     val (test_cached, _) = NeuronUtils.cached(test)
 
     //val testPartialModels = (s.testPartialModels :+ allPartialModels.size).distinct //ensure that the final model is tested
-    val testPartialModels = s.testPartialModels
-    val testDepths = if(s.testDepths.isEmpty) Seq(Integer.MAX_VALUE) else s.testDepths
+    val testPartialModels = if(s.testPartialModels.isEmpty) Seq(model.nElems) else s.testPartialModels
+    val testDepths = if(s.testDepths.isEmpty) Seq(s.maxDepth) else s.testDepths
 
     val partialSegments:Seq[MyEnsembleModelNew[_]] = model.getPartialSegments(testPartialModels)
 
     var j = 0
     while (j < testDepths.size) { // WHYYYY???
       val depth = testDepths(j)
+      println("Depth " + depth)
       j += 1
 
 
@@ -164,15 +165,17 @@ object Main {
           val prediction = if(partialSegment.isSum) currentPrediction + segmentPrediction
                            else if(nElems == partialSegment.nElems) segmentPrediction
                            else (currentPrediction * (nElems - partialSegment.nElems) + segmentPrediction * partialSegment.nElems) / nElems
-          (point.label, prediction)
+          (point.label, prediction, point.data.id, point.inner_idx)
         }.cache()
 
         if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
-          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + i, p, dimensions_train(i), s.toVerboseString, training_time
-            /*,indexesAndGrads*/)
-          Iterator("foo")
-        }).count() != s.subvolumes.length) {
+          p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
+            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + i + "/" + id,
+              d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_train(i)(j), s.toVerboseString, training_time
+              /*,indexesAndGrads*/)
+          }.toIterator
+        }).count() != s.subvolumes.train.length) {
           println("Failed to save!")
           return
         }
@@ -192,14 +195,16 @@ object Main {
           val prediction = if(partialSegment.isSum) currentPrediction + segmentPrediction
           else if(nElems == partialSegment.nElems) segmentPrediction
           else (currentPrediction * (nElems - partialSegment.nElems) + segmentPrediction * partialSegment.nElems) / nElems
-          (point.label, prediction)
+          (point.label, prediction, point.data.id, point.inner_idx)
         }.cache()
         if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
-          NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/test/" + i, p, dimensions_test(i), s.toVerboseString, training_time
-            /*,indexesAndGrads*/)
-          Iterator("foo")
-        }).count() != s.subvolumes.length) {
+          p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
+            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/test/" + i + "/" + id,
+              d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_test(i)(j), s.toVerboseString, training_time
+              /*,indexesAndGrads*/)
+          }.toIterator
+        }).count() != s.subvolumes.test.length) {
           println("Failed to save!")
           return
         }
@@ -225,9 +230,11 @@ object Main {
   // -----------------------------------------------------------------------
 
   case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double)
-  case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String, subvolumes:Seq[String], featureSubsetStrategy:String,
+  case class Subvolumes(train: Seq[String], test:Seq[String])
+  case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
+                         subvolumes:Subvolumes, featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel, treesPerIteration:Int,
-                         dimOffsets:Seq[Int], master:String, trainFraction:Double, save_model_to:String,
+                         dimOffsets:Seq[Int], master:String, save_model_to:String,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
                          useNodeIdCache:Boolean, malisSettings:MalisSettings) {
     def toVerboseString =
@@ -237,7 +244,8 @@ object Main {
       " data_root = "     + data_root + "\n" +
       " save_to = "       + save_to + "\n" +
       " save_model_to = " + save_model_to + "\n" +
-      " subvolumes = "    + subvolumes.toList + "\n" +
+      " train_subvolumes = "    + subvolumes.train.toList + "\n" +
+      " test_subvolumes = "    + subvolumes.test.toList + "\n" +
       " featureSubsetStrategy = "    + featureSubsetStrategy + "\n" +
       " impurity = "    + impurity + "\n" +
       " maxDepth = "    + maxDepth + "\n" +
@@ -247,7 +255,6 @@ object Main {
       " treesPerIteration = "    + treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
       " master = "    + master + "\n" +
-      " trainFraction = "    + trainFraction + "\n" +
       " malisGrad = "    + malisSettings.learningRate + "\n" +
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
@@ -263,31 +270,39 @@ object Main {
 //    args.foreach(println)
 
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
+
+    val train_subvolumes    = {
+      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.take(4).reduce(_ + "," + _))
+      val idx = str.indexOf("*")
+      if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
+      else str.split(",")
+    }
+    val test_subvolumes    = {
+      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.drop(4).take(4).reduce(_ + "," + _))
+      val idx = str.indexOf("*")
+      if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
+      else str.split(",")
+    }
+
     RunSettings(
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
-      data_root     = m.getOrElse("data_root",     "/masters_data/spark/im1/split_2"),
-      save_to       = m.getOrElse("save_to",       "/mnt/masters_predictions"),
-      save_model_to = m.getOrElse("save_model_to", "/mnt/masters_models"),
+      data_root     = m.getOrElse("data_root",     "/isbi_data"),
+      save_to       = m.getOrElse("save_to",       "/isbi_predictions"),
+      save_model_to = m.getOrElse("save_model_to", "/isbi_models"),
       localDir      = m.getOrElse("localDir",     "/tmp"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
-      subvolumes    = {
-        val str = m.getOrElse("subvolumes",    "011")
-        val idx = str.indexOf("*")
-        if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
-        else str.split(",")
-      },
+      subvolumes    = Subvolumes(train_subvolumes, test_subvolumes),
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
       impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
-      maxDepth      = m.getOrElse("maxDepth",      "14").toInt,
+      maxDepth      = m.getOrElse("maxDepth",      "5").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
-      nBaseFeatures = m.getOrElse("nBaseFeatures", "30").toInt,
+      nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
       initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
                       if(m.contains("loadModel")) InitialLoadedModel(m("loadModel"))
                       else InitialTrainModel(m.getOrElse("initialTrees",  "10").toInt),
       treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
-      trainFraction = m.getOrElse("trainFraction", "0.5").toDouble,
       iterations    = m.getOrElse("iterations", "0").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").filter(! _.isEmpty).map(_.toInt),

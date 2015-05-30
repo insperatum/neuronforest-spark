@@ -13,7 +13,7 @@ trait FeatureData {
   def nExamples:Int
 }
 
-class RawFeatureData(file:String, val nFeatures:Int) extends FeatureData with Serializable {
+class RawFeatureData(val id:String, file:String, val nFeatures:Int) extends FeatureData with Serializable {
   val arr = loadFeatures(file)//todo: NO!
   val nExamples = arr.length / nFeatures
   def getValue(i:Int, f:Int) = arr(i*nFeatures + f)
@@ -50,12 +50,13 @@ class RawFeatureData(file:String, val nFeatures:Int) extends FeatureData with Se
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
                         val indexer: Indexer2D,
-                        offsets:Seq[(Int, Int, Int)]) extends Serializable {
+                        offsets:Seq[(Int, Int)]) extends Serializable {
 
 
   import indexer.outerSteps
   val dimensions = indexer.innerDimensions //????
 
+  val id = featureData.id
   val arr = featureData.arr
   val binnedBaseFeatures = Array.ofDim[Int](arr.length)
   val nBaseFeatures = featureData.nFeatures

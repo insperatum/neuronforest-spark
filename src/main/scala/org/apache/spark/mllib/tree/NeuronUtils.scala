@@ -1,10 +1,12 @@
 package org.apache.spark.mllib.tree
 
+import java.awt.image.BufferedImage
 import java.io
-import java.io.{RandomAccessFile, FileWriter}
+import java.io.{File, RandomAccessFile, FileWriter}
 import java.nio.{FloatBuffer, ByteBuffer}
 import java.text.SimpleDateFormat
 import java.util.Date
+import javax.imageio.ImageIO
 
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.Vectors
@@ -47,81 +49,49 @@ object NeuronUtils {
     (newRDD, _ => unpersist())
   }
 
-  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int, Int)]) = {
+  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int)]) = {
     println("getting splits and bins")
     val features_file_1 = data_root + "/" + subvolumes(0) + "/features.raw"
-    val features_data_1 = new RawFeatureData(features_file_1, nBaseFeatures)
+    val features_data_1 = new RawFeatureData(subvolumes(0), features_file_1, nBaseFeatures)
     getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, offsets.length)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
   }
 
   def loadData(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
-               maxBins:Int, offsets:Seq[(Int, Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
-    val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
-      val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
-      Seq(new RawFeatureData(features_file, nBaseFeatures)).toIterator
-    })
+               maxBins:Int, offsets:Seq[(Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
+    val numExecutors = sc.getExecutorStorageStatus.length
+    val chunked = subvolumes.grouped((subvolumes.size + numExecutors - 1) / numExecutors).toSeq
 
-    val dimensions = getDimensions(sc, data_root, subvolumes, proportion, fromFront)
-    val data = rawFeaturesData.zip(dimensions).mapPartitionsWithIndex((i, p) => {
+    val rawFeaturesData = sc.parallelize(chunked, chunked.size).mapPartitions{
+      _.next().map{ s =>
+        new RawFeatureData(s, data_root + "/" + s + "/features.raw", nBaseFeatures)
+      }.toIterator
+    }
+
+    val dimensions = getDimensions(sc, data_root, chunked, proportion, fromFront)
+    val data = rawFeaturesData.zip(dimensions).mapPartitions{p =>
+
       val startTime = System.currentTimeMillis()
 
-      val (rawData, dimensions) = p.next()
+      val d = p.flatMap { case (rawData, dimensions) =>
+        val targets = getTargets(data_root, rawData.id, dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
 
-      val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
+        val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
 
-      val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
-
-      val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets)
-      val d = targets.zipWithIndex.map { case (ts, idx) =>
-        val y = ts(0)
-        //val seg = ts(3).toInt
-        val seg = 0
-        val outer_idx = indexer.innerToOuter(idx)
-        new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
+        val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets)
+        targets.zipWithIndex.map { case (ts, idx) =>
+          val y = ts(0)
+          //val seg = ts(2).toInt
+          val seg = 0
+          val outer_idx = indexer.innerToOuter(idx)
+          new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
+        }
       }
-
       println("creating partition data took " + (System.currentTimeMillis() - startTime) + " ms")
       d
-    })
-    (data, dimensions.collect())
+    }
+    (data, dimensions.mapPartitions{ p => Seq(p.toArray).toIterator}.collect.toArray)
   }
 
-
-
-  def loadLabeledData1D(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
-               proportion: Double, fromFront: Boolean) = {
-    val rawFeaturesData = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
-      val features_file = data_root + "/" + subvolumes(i) + "/features.raw"
-      Seq(new RawFeatureData(features_file, nBaseFeatures)).toIterator
-    })
-
-    val dimensions = getDimensions(sc, data_root, subvolumes, proportion, fromFront)
-    val data = rawFeaturesData.zip(dimensions).mapPartitionsWithIndex((i, p) => {
-      val startTime = System.currentTimeMillis()
-
-      val (rawData, dimensions) = p.next()
-
-      val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
-
-      val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
-
-      val featureVectors = rawData.toVectors.toArray
-
-      val d = targets.zipWithIndex.map { case (ts, idx) =>
-        val y = ts(0)
-        //val seg = ts(3).toInt
-        val seg = 0
-        val outer_idx = indexer.innerToOuter(idx)
-        //new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
-        val features = featureVectors(outer_idx)
-        new LabeledPoint(ts(0), features)
-      }
-
-      println("creating partition data took " + (System.currentTimeMillis() - startTime) + " ms")
-      d
-    })
-    (data, dimensions.collect())
-  }
 
   /*def randomLabeledData1D(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
                           proportion: Double, fromFront: Boolean) = {
@@ -139,9 +109,10 @@ object NeuronUtils {
   }*/
 
   case class Dimensions(outerDimensions:(Int, Int), min_idx:(Int, Int), max_idx:(Int, Int), n_targets:Int, target_index_offset:Int)
+  private def getDimensions(sc:SparkContext, data_root:String, subvolumes_chunked:Seq[Seq[String]], proportion:Double, fromFront:Boolean) = {
+    val numExecutors = sc.getExecutorStorageStatus.length
 
-  private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Seq[String], proportion:Double, fromFront:Boolean) = {
-    sc.parallelize(subvolumes, subvolumes.length).map(subvolume => {
+    sc.parallelize(subvolumes_chunked, subvolumes_chunked.length).mapPartitions(_.next().map{ subvolume => {
       val dimensions_file = data_root + "/" + subvolume + "/dimensions.txt"
       val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
 
@@ -152,16 +123,16 @@ object NeuronUtils {
       val max_idx_all = (dimensions(2)(0), dimensions(2)(1))
 
       val min_idx = if(fromFront) min_idx_all
-        else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2)
+      else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2)
 
       val max_idx = if(!fromFront) max_idx_all
-        else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2)
+      else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2)
 
       val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1)
       val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1)
 
       Dimensions(outerDimensions, min_idx, max_idx, n_targets, target_index_offset)
-    })
+    }}.toIterator)
   }
 
 
@@ -247,7 +218,7 @@ object NeuronUtils {
     fc.close()
   }
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double)], dimensions:Dimensions,
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double, Int /*inner_idx*/)], dimensions:Dimensions,
                                description:String, training_time:Long, indexesAndGrads:Array[(Int, Double)] = null): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
@@ -264,6 +235,19 @@ object NeuronUtils {
     fwdimensions.write(dims._1 + " " + dims._2)
     fwdimensions.close()
 
+
+    val labelsAndPredictionsSeq = labelsAndPredictions.toList
+
+    val pred_vals = labelsAndPredictionsSeq.map(x => (x._2 * 255).toInt).toArray
+    val pred_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
+    pred_img.setRGB(0, 0, dims._2, dims._1, pred_vals, 0, dims._2)
+    ImageIO.write(pred_img, "png", new File(path + "/predictions.png"))
+
+    val label_vals = labelsAndPredictionsSeq.map(x => (x._1 * 255).toInt).toArray
+    val lab_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
+    lab_img.setRGB(0, 0, dims._2, dims._1, label_vals, 0, dims._2)
+    ImageIO.write(lab_img, "png", new File(path + "/labels.png"))
+
     /*val fwlabels = new FileWriter(path + "/labels.txt", false)
     val fwpredictions = new FileWriter(path + "/predictions.txt", false)
     labelsAndPredictions.foreach{ case (label, prediction) => {
@@ -273,22 +257,23 @@ object NeuronUtils {
     fwlabels.close()
     fwpredictions.close()*/
 
-    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
-    val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
-    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
-    val floatBuffer =  byteBuffer.asFloatBuffer()
-    labelsAndPredictions.foreach{ case (label, prediction) =>
-      floatBuffer.put(label.toFloat)
-      fclabels.write(byteBuffer)
-      byteBuffer.rewind()
-      floatBuffer.clear()
-      floatBuffer.put(prediction.toFloat)
-      fcpredictions.write(byteBuffer)
-      byteBuffer.rewind()
-      floatBuffer.clear()
-    }
-    fclabels.close()
-    fcpredictions.close()
+//
+//    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
+//    val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
+//    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
+//    val floatBuffer =  byteBuffer.asFloatBuffer()
+//    labelsAndPredictions.foreach{ case (label, prediction) =>
+//      floatBuffer.put(label.toFloat)
+//      fclabels.write(byteBuffer)
+//      byteBuffer.rewind()
+//      floatBuffer.clear()
+//      floatBuffer.put(prediction.toFloat)
+//      fcpredictions.write(byteBuffer)
+//      byteBuffer.rewind()
+//      floatBuffer.clear()
+//    }
+//    fclabels.close()
+//    fcpredictions.close()
 
 
     if(indexesAndGrads != null) {
