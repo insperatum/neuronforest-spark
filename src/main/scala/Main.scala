@@ -272,13 +272,13 @@ object Main {
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
 
     val train_subvolumes    = {
-      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.take(1).reduce(_ + "," + _))
+      val str = m.getOrElse("subvolumes_train", new File("/isbi_data").listFiles().map(_.getName).sorted.take(1).reduce(_ + "," + _))
       val idx = str.indexOf("*")
       if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
       else str.split(",")
     }
     val test_subvolumes    = {
-      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.drop(1).take(1).reduce(_ + "," + _))
+      val str = m.getOrElse("subvolumes_test", new File("/isbi_data").listFiles().map(_.getName).sorted.drop(1).take(1).reduce(_ + "," + _))
       val idx = str.indexOf("*")
       if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
       else str.split(",")
