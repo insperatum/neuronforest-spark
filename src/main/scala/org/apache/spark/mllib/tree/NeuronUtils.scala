@@ -69,7 +69,7 @@ object NeuronUtils {
 
       val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
 
-      val indexer = new Indexer3D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
+      val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
 
       val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets)
       val d = targets.zipWithIndex.map { case (ts, idx) =>
@@ -103,7 +103,7 @@ object NeuronUtils {
 
       val targets = getTargets(data_root, subvolumes(i), dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
 
-      val indexer = new Indexer3D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
+      val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
 
       val featureVectors = rawData.toVectors.toArray
 
@@ -123,7 +123,7 @@ object NeuronUtils {
     (data, dimensions.collect())
   }
 
-  def randomLabeledData1D(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
+  /*def randomLabeledData1D(sc: SparkContext, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
                           proportion: Double, fromFront: Boolean) = {
     println("USING COMPLETELY RANDOM SYNTHETIC DATA")
     val data = sc.parallelize(1 to subvolumes.size, subvolumes.size).mapPartitionsWithIndex((i, _) => {
@@ -136,29 +136,29 @@ object NeuronUtils {
       Dimensions((100, 100, 100), (0, 0, 0), (199, 199, 199), 1000000, 0)
     }
     (data, dimensions)
-  }
+  }*/
 
-  case class Dimensions(outerDimensions:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
+  case class Dimensions(outerDimensions:(Int, Int), min_idx:(Int, Int), max_idx:(Int, Int), n_targets:Int, target_index_offset:Int)
 
   private def getDimensions(sc:SparkContext, data_root:String, subvolumes:Seq[String], proportion:Double, fromFront:Boolean) = {
     sc.parallelize(subvolumes, subvolumes.length).map(subvolume => {
       val dimensions_file = data_root + "/" + subvolume + "/dimensions.txt"
       val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
 
-      val outerDimensions = (dimensions(0)(0), dimensions(0)(1), dimensions(0)(2))
+      val outerDimensions = (dimensions(0)(0), dimensions(0)(1))
       //val size = dimensions(0)
       //val step = (size(1) * size(2), size(2), 1)
-      val min_idx_all = (dimensions(1)(0), dimensions(1)(1), dimensions(1)(2))
-      val max_idx_all = (dimensions(2)(0), dimensions(2)(1), dimensions(2)(2))
+      val min_idx_all = (dimensions(1)(0), dimensions(1)(1))
+      val max_idx_all = (dimensions(2)(0), dimensions(2)(1))
 
       val min_idx = if(fromFront) min_idx_all
-        else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2, min_idx_all._3)
+        else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2)
 
       val max_idx = if(!fromFront) max_idx_all
-        else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2, max_idx_all._3)
+        else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2)
 
-      val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
-      val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
+      val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1)
+      val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1)
 
       Dimensions(outerDimensions, min_idx, max_idx, n_targets, target_index_offset)
     })
@@ -226,17 +226,17 @@ object NeuronUtils {
     fcseg.close()
   }
 
-  def save3D(path:String, filename:String, that:Array[Double], dims:(Int, Int, Int)): Unit = {
+  def save2D(path:String, filename:String, that:Array[Double], dims:(Int, Int)): Unit = {
     println("Saving 3D: " + path + "/" + filename)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
 
     val fwdims = new FileWriter(path + "/dims.txt", false)
-    fwdims.write(dims._1 + " " + dims._2 + " " + dims._3)
+    fwdims.write(dims._1 + " " + dims._2)
     fwdims.close()
 
     val fc = new RandomAccessFile(path + "/" + filename, "rw").getChannel
-    val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
+    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
     val floatBuffer =  byteBuffer.asFloatBuffer()
     that.foreach { d3 =>
       floatBuffer.put(d3.toFloat)
@@ -260,8 +260,8 @@ object NeuronUtils {
 
     val fwdimensions = new FileWriter(path + "/dimensions.txt", false)
     import dimensions.{min_idx, max_idx}
-    val dims = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
-    fwdimensions.write(dims._1 + " " + dims._2 + " " + dims._3)
+    val dims = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1)
+    fwdimensions.write(dims._1 + " " + dims._2)
     fwdimensions.close()
 
     /*val fwlabels = new FileWriter(path + "/labels.txt", false)
@@ -275,7 +275,7 @@ object NeuronUtils {
 
     val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
     val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
-    val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
+    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
     val floatBuffer =  byteBuffer.asFloatBuffer()
     labelsAndPredictions.foreach{ case (label, prediction) =>
       floatBuffer.put(label.toFloat)

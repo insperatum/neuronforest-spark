@@ -1,7 +1,7 @@
 package org.apache.spark.mllib.tree.loss
 
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
-import org.apache.spark.mllib.tree.{NeuronUtils, Indexer3D}
+import org.apache.spark.mllib.tree.{NeuronUtils, Indexer2D}
 import org.apache.spark.mllib.tree.impl.MyTreePoint
 import org.apache.spark.mllib.tree.model.MyTreeEnsembleModelNew
 import org.apache.spark.rdd.RDD
@@ -54,14 +54,12 @@ object MalisLoss extends MyLoss {
 
     val submaps = for(x <- 0 to dimensions._1/subvolume_size;
         y <- 0 to dimensions._2/subvolume_size;
-        z <- 0 to dimensions._3/subvolume_size;
         if math.random < subsample_proportion) yield {
-      val minIdx = (x * subvolume_size, y * subvolume_size, z * subvolume_size)
+      val minIdx = (x * subvolume_size, y * subvolume_size)
       val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
       val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
-      val max_z = math.min((z+1) * subvolume_size - 1, dimensions._3 - 1)
-      val maxIdx = (max_x, max_y, max_z)
-      val indexer = new Indexer3D(dimensions, minIdx, maxIdx)
+      val maxIdx = (max_x, max_y)
+      val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
       val (grads, d, df_sub, dt_sub) = gradForSubvolume(pointsAndPreds, indexer)
       if(d < dMin) {
         dMin = d
@@ -79,12 +77,12 @@ object MalisLoss extends MyLoss {
       dt.foreach(i => seg_save(i) = 2)
       NeuronUtils.saveSeg(save_to, "maximin_seg.raw", seg_save)
 
-      NeuronUtils.save3D(save_to, "points.raw", pointsAndPreds.map(_._1.label), dimensions)
-      NeuronUtils.save3D(save_to, "preds.raw", pointsAndPreds.map(_._2), dimensions)
+      NeuronUtils.save2D(save_to, "points.raw", pointsAndPreds.map(_._1.label), dimensions)
+      NeuronUtils.save2D(save_to, "preds.raw", pointsAndPreds.map(_._2), dimensions)
 
       val grad_save = Array.fill[Double](pointsAndPreds.length)(0.0)
       grads.foreach(g => grad_save(g._1.inner_idx)=g._2)
-      NeuronUtils.save3D(save_to, "grads.raw", grad_save, dimensions)
+      NeuronUtils.save2D(save_to, "grads.raw", grad_save, dimensions)
     }
 
     grads
@@ -95,14 +93,12 @@ object MalisLoss extends MyLoss {
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
     val submaps = for(x <- 0 to dimensions._1/subvolume_size;
-                      y <- 0 to dimensions._2/subvolume_size;
-                      z <- 0 to dimensions._3/subvolume_size) yield {
-      val minIdx = (x * subvolume_size, y * subvolume_size, z * subvolume_size)
+                      y <- 0 to dimensions._2/subvolume_size) yield {
+      val minIdx = (x * subvolume_size, y * subvolume_size)
       val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
       val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
-      val max_z = math.min((z+1) * subvolume_size - 1, dimensions._3 - 1)
-      val maxIdx = (max_x, max_y, max_z)
-      val indexer = new Indexer3D(dimensions, minIdx, maxIdx)
+      val maxIdx = (max_x, max_y)
+      val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
       val seg = segForSubvolume(pointsAndPreds, indexer)
       val idxs_segs = (0 until indexer.size).map(indexer.innerToOuter).zip(seg)
       idxs_segs
@@ -118,7 +114,7 @@ object MalisLoss extends MyLoss {
   }
 
 
-  def segForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer3D):Array[Int] = {
+  def segForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer2D):Array[Int] = {
     print("Seg for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
 
@@ -133,7 +129,7 @@ object MalisLoss extends MyLoss {
     seg
   }
 
-  def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer3D) = {
+  def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer2D) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
     val scaleFactor = 2d / (Math.pow(subvolume_size,3) * Math.pow(subvolume_size-1, 3))
 
@@ -188,7 +184,7 @@ object MalisLoss extends MyLoss {
     (grads, d, df_out, dt_out)
   }
 
-  def kruskals(pointsAndAffs: Array[(MyTreePoint, Double)], indexer:Indexer3D, edgeFilter:Edge => Boolean = _ => true,
+  def kruskals(pointsAndAffs: Array[(MyTreePoint, Double)], indexer:Indexer2D, edgeFilter:Edge => Boolean = _ => true,
                innerFunc:(Edge, Int=>Seq[Int], Int, Int) => Unit = (_, _, _, _) => {})
   :(Array[IndexedSeq[Int]], Array[Int], Int => Int) = {
 
@@ -201,10 +197,7 @@ object MalisLoss extends MyLoss {
       val l2 = if(multi._2 >= indexer.innerDimensions._2-1) List()
                else List(Edge(point, affs, i, i + indexer.innerSteps._2, 2))
 
-      val l3 = if(multi._3 >= indexer.innerDimensions._3-1) List()
-               else List(Edge(point, affs, i, i + indexer.innerSteps._3, 3))
-
-      l1 ++ l2 ++ l3
+      l1 ++ l2
     })
 
     val edges = new mutable.PriorityQueue[Edge]()(Ordering.by(_.weight)) //Order by weight DESCENDING
