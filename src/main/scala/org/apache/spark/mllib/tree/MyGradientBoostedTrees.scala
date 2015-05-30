@@ -177,6 +177,7 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("init")
 
     println("##########")
+    println(new java.util.Date)
     println("Building initial model")
     println("##########")
     var data = input
@@ -221,6 +222,7 @@ object MyGradientBoostedTrees extends Logging {
     while (m <= numIterations) {
       timer.start(s"building tree ${m}")
       println("###################################################")
+      println(new java.util.Date)
       println("Gradient boosting tree iteration " + (m) + " of " + numIterations)
       println("###################################################")
       /*data.mapPartitionsWithIndex { (i, _) => {
