@@ -22,7 +22,6 @@ import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.linalg.Vector
-import org.apache.spark.mllib.tree.Double3
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.EnsembleCombiningStrategy._
 import org.apache.spark.rdd.RDD
@@ -88,7 +87,7 @@ class MyEnsembleModel[T <: MyModel](
    * @param features array representing a single data point
    * @return predicted category from the trained model
    */
-  private def predictBySumming(features: Vector): Double3 = {
+  private def predictBySumming(features: Vector): Double = {
     val treePredictions = elems.map(_.predict(features))
     //blas.ddot(numTrees, treePredictions, 1, treeWeights, 1)
     treePredictions.zip(treeWeights).map {case (p, w) => p*w}.reduce(_+_)
@@ -114,7 +113,7 @@ class MyEnsembleModel[T <: MyModel](
    * @param features array representing a single data point
    * @return predicted category from the trained model
    */
-  def predict(features: Vector): Double3 = {
+  def predict(features: Vector): Double = {
     (algo, combiningStrategy) match {
       case (Regression, Sum) =>
         predictBySumming(features)
@@ -139,7 +138,7 @@ class MyEnsembleModel[T <: MyModel](
    * @param features RDD representing data points to be predicted
    * @return RDD[Double] where each entry contains the corresponding prediction
    */
-  def predict(features: RDD[Vector]): RDD[Double3] = features.map(x => predict(x))
+  def predict(features: RDD[Vector]): RDD[Double] = features.map(x => predict(x))
 
   /**
    * Java-friendly version of [[org.apache.spark.mllib.tree.model.MyEnsembleModel#predict]].
@@ -233,7 +232,7 @@ class MyEnsembleModelNew[T <: MyModel](
    * @param features array representing a single data point
    * @return predicted category from the trained model
    */
-  private def predictBySumming(features: Vector): Double3 = {
+  private def predictBySumming(features: Vector): Double = {
     val treePredictions = elems.map(_.predict(features))
     //blas.ddot(numTrees, treePredictions, 1, treeWeights, 1)
     treePredictions.zip(treeWeights).map {case (p, w) => p*w}.reduce(_+_)
@@ -259,7 +258,7 @@ class MyEnsembleModelNew[T <: MyModel](
    * @param features array representing a single data point
    * @return predicted category from the trained model
    */
-  def predict(features: Vector): Double3 = {
+  def predict(features: Vector): Double = {
     (algo, combiningStrategy) match {
       case (Regression, Sum) =>
         predictBySumming(features)
@@ -284,7 +283,7 @@ class MyEnsembleModelNew[T <: MyModel](
    * @param features RDD representing data points to be predicted
    * @return RDD[Double] where each entry contains the corresponding prediction
    */
-  def predict(features: RDD[Vector]): RDD[Double3] = features.map(x => predict(x))
+  def predict(features: RDD[Vector]): RDD[Double] = features.map(x => predict(x))
 
   /**
    * Java-friendly version of [[org.apache.spark.mllib.tree.model.MyEnsembleModelNew#predict]].

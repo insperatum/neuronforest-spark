@@ -1,7 +1,7 @@
 package org.apache.spark.mllib.tree.loss
 
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
-import org.apache.spark.mllib.tree.{NeuronUtils, Indexer3D, Double3}
+import org.apache.spark.mllib.tree.{NeuronUtils, Indexer3D}
 import org.apache.spark.mllib.tree.impl.MyTreePoint
 import org.apache.spark.mllib.tree.model.MyTreeEnsembleModelNew
 import org.apache.spark.rdd.RDD
@@ -16,7 +16,7 @@ object MalisLoss extends MyLoss {
   def gradient(model: MyModel,
                points: RDD[MyTreePoint],
               subsample_proportion: Double,
-               save_to:String = null): RDD[(MyTreePoint, Double3)] = {
+               save_to:String = null): RDD[(MyTreePoint, Double)] = {
     val preds = model.predict(points.map(_.getFeatureVector))
     val g = points.zip(preds).mapPartitionsWithIndex((i, k) => {
       println("Gradient for partition " + i + "...")
@@ -44,7 +44,7 @@ object MalisLoss extends MyLoss {
 
   case class Edge(point:MyTreePoint, weight:Double, from:Int, to:Int, dir:Int)
 
-  def grad(pointsAndPreds: Array[(MyTreePoint, Double3)], subsample_proportion:Double = 1, save_to:String) = {
+  def grad(pointsAndPreds: Array[(MyTreePoint, Double)], subsample_proportion:Double = 1, save_to:String) = {
     val subvolume_size = 20
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
@@ -82,7 +82,7 @@ object MalisLoss extends MyLoss {
       NeuronUtils.save3D(save_to, "points.raw", pointsAndPreds.map(_._1.label), dimensions)
       NeuronUtils.save3D(save_to, "preds.raw", pointsAndPreds.map(_._2), dimensions)
 
-      val grad_save = Array.fill[Double3](pointsAndPreds.length)(Double3.Zero)
+      val grad_save = Array.fill[Double](pointsAndPreds.length)(0.0)
       grads.foreach(g => grad_save(g._1.inner_idx)=g._2)
       NeuronUtils.save3D(save_to, "grads.raw", grad_save, dimensions)
     }
@@ -90,7 +90,7 @@ object MalisLoss extends MyLoss {
     grads
   }
 
-  def seg(pointsAndPreds: Array[(MyTreePoint, Double3)], save_to:String): Seq[(Int, Int)] = {
+  def seg(pointsAndPreds: Array[(MyTreePoint, Double)], save_to:String): Seq[(Int, Int)] = {
     // this is all just for debugging
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
@@ -118,7 +118,7 @@ object MalisLoss extends MyLoss {
   }
 
 
-  def segForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double3)], indexer:Indexer3D):Array[Int] = {
+  def segForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer3D):Array[Int] = {
     print("Seg for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
 
@@ -133,13 +133,13 @@ object MalisLoss extends MyLoss {
     seg
   }
 
-  def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double3)], indexer:Indexer3D) = {
+  def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer3D) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
     val scaleFactor = 2d / (Math.pow(subvolume_size,3) * Math.pow(subvolume_size-1, 3))
 
     print("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
-    val gradients = new ArrayBuffer[(MyTreePoint, Double3)]()
+    val gradients = new ArrayBuffer[(MyTreePoint, Double)]()
 
     //todo: all this shit can go once I've got good pictures
     var df:Map[Int, Seq[Int]] = null
@@ -151,11 +151,7 @@ object MalisLoss extends MyLoss {
 
       //val trueAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._1.label
       val predAffs = pointsAndPreds(indexer.innerToOuter(edge.to))._2
-      val aff:Double = edge.dir match {
-        case 1 => predAffs._1
-        case 2 => predAffs._2
-        case 3 => predAffs._3
-      }
+      val aff:Double = predAffs
 
       val descFrom = descendants(ancFrom).groupBy(seg)
       val descTo = descendants(ancTo).groupBy(seg)
@@ -170,11 +166,7 @@ object MalisLoss extends MyLoss {
       val del = (nPos - aff*(nNeg + nPos)) * scaleFactor
 
 
-      gradients.append(edge.point -> (edge.dir match {
-        case 1 => Double3(del, 0, 0)
-        case 2 => Double3(0, del, 0)
-        case 3 => Double3(0, 0, del)
-      }))
+      gradients.append(edge.point -> del)
 
       if(del < d) {
         df = descFrom
@@ -196,7 +188,7 @@ object MalisLoss extends MyLoss {
     (grads, d, df_out, dt_out)
   }
 
-  def kruskals(pointsAndAffs: Array[(MyTreePoint, Double3)], indexer:Indexer3D, edgeFilter:Edge => Boolean = _ => true,
+  def kruskals(pointsAndAffs: Array[(MyTreePoint, Double)], indexer:Indexer3D, edgeFilter:Edge => Boolean = _ => true,
                innerFunc:(Edge, Int=>Seq[Int], Int, Int) => Unit = (_, _, _, _) => {})
   :(Array[IndexedSeq[Int]], Array[Int], Int => Int) = {
 
@@ -204,13 +196,13 @@ object MalisLoss extends MyLoss {
       val (point, affs) = pointsAndAffs(indexer.innerToOuter(i))
       val multi = indexer.innerToMulti(i)
       val l1 = if(multi._1 >= indexer.innerDimensions._1-1) List()
-               else List(Edge(point, affs._1, i, i + indexer.innerSteps._1, 1))
+               else List(Edge(point, affs, i, i + indexer.innerSteps._1, 1))
 
       val l2 = if(multi._2 >= indexer.innerDimensions._2-1) List()
-               else List(Edge(point, affs._2, i, i + indexer.innerSteps._2, 2))
+               else List(Edge(point, affs, i, i + indexer.innerSteps._2, 2))
 
       val l3 = if(multi._3 >= indexer.innerDimensions._3-1) List()
-               else List(Edge(point, affs._3, i, i + indexer.innerSteps._3, 3))
+               else List(Edge(point, affs, i, i + indexer.innerSteps._3, 3))
 
       l1 ++ l2 ++ l3
     })

@@ -20,7 +20,6 @@ package org.apache.spark.mllib.tree.loss
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.mllib.regression.MyLabeledPoint
-import org.apache.spark.mllib.tree.Double3
 import org.apache.spark.mllib.tree.impl.MyTreePoint
 import org.apache.spark.mllib.tree.model.{MyEnsembleModelNew, MyTreeEnsembleModelNew, TreeEnsembleModel}
 import org.apache.spark.rdd.RDD
@@ -36,7 +35,7 @@ trait MyLoss extends Serializable {
       model: MyModel,
       points: RDD[MyTreePoint],
       subsample_proportion: Double,
-      save_to:String = null): RDD[(MyTreePoint, Double3)]
+      save_to:String = null): RDD[(MyTreePoint, Double)]
 
   def computeError(model: MyModel, data: RDD[MyTreePoint]): Double
 

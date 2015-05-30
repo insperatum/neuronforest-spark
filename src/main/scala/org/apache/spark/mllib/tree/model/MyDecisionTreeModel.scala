@@ -21,7 +21,7 @@ import main.scala.org.apache.spark.mllib.tree.model.MyModel
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.linalg.Vector
-import org.apache.spark.mllib.tree.Double3
+
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.rdd.RDD
 
@@ -45,7 +45,7 @@ class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializa
    * @param features array representing a single data point
    * @return Double prediction from the trained model
    */
-  def predict(features: Vector): Double3 = {
+  def predict(features: Vector): Double = {
     topNode.predict(features, maxDepth)
   }
 
@@ -55,7 +55,7 @@ class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializa
    * @param features RDD representing data points to be predicted
    * @return RDD of predictions for each of the given data points
    */
-  def predict(features: RDD[Vector]): RDD[Double3] = {
+  def predict(features: RDD[Vector]): RDD[Double] = {
     features.map(x => predict(x))
   }
 
@@ -66,7 +66,7 @@ class MyDecisionTreeModel(val topNode: MyNode, val algo: Algo) extends Serializa
    * @param features JavaRDD representing data points to be predicted
    * @return JavaRDD of predictions for each of the given data points
    */
-  def predict(features: JavaRDD[Vector]): JavaRDD[Double3] = {
+  def predict(features: JavaRDD[Vector]): JavaRDD[Double] = {
     predict(features.rdd)
   }
 

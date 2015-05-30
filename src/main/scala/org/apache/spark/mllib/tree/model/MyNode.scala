@@ -20,7 +20,7 @@ package org.apache.spark.mllib.tree.model
 import org.apache.spark.Logging
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.mllib.linalg.Vector
-import org.apache.spark.mllib.tree.Double3
+
 import org.apache.spark.mllib.tree.configuration.FeatureType._
 
 /**
@@ -79,7 +79,7 @@ class MyNode (
    * @param features feature value
    * @return predicted value
    */
-  def predict(features: Vector, maxDepth:Int = Integer.MAX_VALUE) : Double3 = {
+  def predict(features: Vector, maxDepth:Int = Integer.MAX_VALUE) : Double = {
     if (isLeaf || MyNode.indexToLevel(id) >= maxDepth) {
       predict.predict
     } else{
@@ -174,7 +174,7 @@ private[tree] object MyNode {
   /**
    * Return a node with the given node id (but nothing else set).
    */
-  def emptyNode(nodeIndex: Int): MyNode = new MyNode(nodeIndex, new MyPredict(Double3.MinValue), -1.0,
+  def emptyNode(nodeIndex: Int): MyNode = new MyNode(nodeIndex, new MyPredict(Double.MinValue), -1.0,
     false, None, None, None, None)
 
   /**

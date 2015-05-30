@@ -18,7 +18,7 @@
 package org.apache.spark.mllib.tree.model
 
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.mllib.tree.Double3
+
 
 /**
  * :: DeveloperApi ::
@@ -64,5 +64,5 @@ private[tree] object MyInformationGainStats {
    * minimum number of instances per node.
    */
   val invalidInformationGainStats = new MyInformationGainStats(Double.MinValue, -1.0, -1.0, -1.0,
-    new MyPredict(Double3.Zero, 0.0), new MyPredict(Double3.Zero, 0.0))
+    new MyPredict(0.0, 0.0), new MyPredict(0.0, 0.0))
 }

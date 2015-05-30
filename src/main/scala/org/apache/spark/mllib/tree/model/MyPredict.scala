@@ -18,7 +18,7 @@
 package org.apache.spark.mllib.tree.model
 
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.mllib.tree.Double3
+
 
 /**
  * Predicted value for a node
@@ -27,10 +27,10 @@ import org.apache.spark.mllib.tree.Double3
  */
 @DeveloperApi
 class MyPredict(
-    val predict: Double3,
+    val predict: Double,
     val prob: Double = 0.0) extends Serializable {
 
   override def toString = {
-    "predict = (%f, %f, %f), prob = %f".format(predict._1, predict._2, predict._3, prob)
+    "predict = (%f), prob = %f".format(predict, prob)
   }
 }

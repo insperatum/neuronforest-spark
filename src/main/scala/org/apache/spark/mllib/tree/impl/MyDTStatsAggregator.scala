@@ -17,7 +17,7 @@
 
 package org.apache.spark.mllib.tree.impl
 
-import org.apache.spark.mllib.tree.Double3
+
 import org.apache.spark.mllib.tree.impurity._
 
 
@@ -95,7 +95,7 @@ private[tree] class MyDTStatsAggregator(
   /**
    * Update the stats for a given (feature, bin) for ordered features, using the given label.
    */
-  def update(featureIndex: Int, binIndex: Int, label: Double3, instanceWeight: Double): Unit = {
+  def update(featureIndex: Int, binIndex: Int, label: Double, instanceWeight: Double): Unit = {
     val i = featureOffsets(featureIndex) + binIndex * statsSize
     impurityAggregator.update(allStats, i, label, instanceWeight)
   }
@@ -112,7 +112,7 @@ private[tree] class MyDTStatsAggregator(
   def featureUpdate(
       featureOffset: Int,
       binIndex: Int,
-      label: Double3,
+      label: Double,
       instanceWeight: Double): Unit = {
     impurityAggregator.update(allStats, featureOffset + binIndex * statsSize,
       label, instanceWeight)

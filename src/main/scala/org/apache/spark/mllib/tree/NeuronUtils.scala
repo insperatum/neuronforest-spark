@@ -73,8 +73,9 @@ object NeuronUtils {
 
       val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets)
       val d = targets.zipWithIndex.map { case (ts, idx) =>
-        val y = Double3(ts(0), ts(1), ts(2))
-        val seg = ts(3).toInt
+        val y = ts(0)
+        //val seg = ts(3).toInt
+        val seg = 0
         val outer_idx = indexer.innerToOuter(idx)
         new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
       }
@@ -107,8 +108,9 @@ object NeuronUtils {
       val featureVectors = rawData.toVectors.toArray
 
       val d = targets.zipWithIndex.map { case (ts, idx) =>
-        val y = Double3(ts(0), ts(1), ts(2))
-        val seg = ts(3).toInt
+        val y = ts(0)
+        //val seg = ts(3).toInt
+        val seg = 0
         val outer_idx = indexer.innerToOuter(idx)
         //new MyTreePoint(y, seg, binnedFeatureData, idx, outer_idx)
         val features = featureVectors(outer_idx)
@@ -224,7 +226,7 @@ object NeuronUtils {
     fcseg.close()
   }
 
-  def save3D(path:String, filename:String, that:Array[Double3], dims:(Int, Int, Int)): Unit = {
+  def save3D(path:String, filename:String, that:Array[Double], dims:(Int, Int, Int)): Unit = {
     println("Saving 3D: " + path + "/" + filename)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
@@ -237,7 +239,7 @@ object NeuronUtils {
     val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
     val floatBuffer =  byteBuffer.asFloatBuffer()
     that.foreach { d3 =>
-      Seq(d3._1, d3._2, d3._3).foreach(d => floatBuffer.put(d.toFloat))
+      floatBuffer.put(d3.toFloat)
       fc.write(byteBuffer)
       byteBuffer.rewind()
       floatBuffer.clear()
@@ -245,8 +247,8 @@ object NeuronUtils {
     fc.close()
   }
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double3, Double3)], dimensions:Dimensions,
-                               description:String, training_time:Long, indexesAndGrads:Array[(Int, Double3)] = null): Unit = {
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double)], dimensions:Dimensions,
+                               description:String, training_time:Long, indexesAndGrads:Array[(Int, Double)] = null): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
@@ -276,11 +278,11 @@ object NeuronUtils {
     val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
     val floatBuffer =  byteBuffer.asFloatBuffer()
     labelsAndPredictions.foreach{ case (label, prediction) =>
-      Seq(label._1, label._2, label._3).foreach(d => floatBuffer.put(d.toFloat))
+      floatBuffer.put(label.toFloat)
       fclabels.write(byteBuffer)
       byteBuffer.rewind()
       floatBuffer.clear()
-      Seq(prediction._1, prediction._2, prediction._3).foreach(d => floatBuffer.put(d.toFloat))
+      floatBuffer.put(prediction.toFloat)
       fcpredictions.write(byteBuffer)
       byteBuffer.rewind()
       floatBuffer.clear()
@@ -292,7 +294,7 @@ object NeuronUtils {
     if(indexesAndGrads != null) {
       val fwgrads = new FileWriter(path + "/gradients.txt", false)
       indexesAndGrads.foreach{ case (idx, grad) =>
-        fwgrads.write(idx + " " + grad._1 + " " + grad._2 + " " + grad._3 + "\n")
+        fwgrads.write(idx + " " + grad + "\n")
       }
       fwgrads.close()
     }

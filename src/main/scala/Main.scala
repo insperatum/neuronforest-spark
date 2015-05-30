@@ -147,8 +147,8 @@ object Main {
       var i=0
       var nElems = 0
       var weightSum = 0
-      var currentPredictionsTrain = train_cached.map { point => Double3.Zero }
-      var currentPredictionsTest = test_cached.map { point => Double3.Zero }
+      var currentPredictionsTrain = train_cached.map { point => 0.0 }
+      var currentPredictionsTest = test_cached.map { point => 0.0 }
       while(i < testPartialModels.size) { //shit goes weird when I use a for loop. WHY? todo:INVESTIGATE
         val partialSegment = partialSegments(i)
 //        val partialModel = allPartialModels(testPartialModels(i) - 1)
