@@ -83,9 +83,10 @@ class MyGradientBoostedTrees(private val boostingStrategy: MyBoostingStrategy)
           splits:Array[Array[Split]],
           bins:Array[Array[Bin]],
          subsample_proportion: Double,
-          featureSubsetStrategy:String = "all",
-          save_gradients_to:String = null) = {
-    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, subsample_proportion, featureSubsetStrategy, save_gradients_to)
+          featureSubsetStrategy:String,
+          save_loss_to:String,
+           save_gradients:Boolean) = {
+    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, subsample_proportion, featureSubsetStrategy, save_loss_to, save_gradients)
   }
 
 
@@ -138,8 +139,9 @@ object MyGradientBoostedTrees extends Logging {
       splits:Array[Array[Split]],
       bins:Array[Array[Bin]],
       subsample_proportion:Double,
-      featureSubsetStrategy:String = "all",
-      save_gradients_to:String = null) = {
+      featureSubsetStrategy:String,
+      save_loss_to:String,
+      save_gradients:Boolean) = {
 
     val timer = new TimeTracker()
     timer.start("total")
@@ -158,7 +160,7 @@ object MyGradientBoostedTrees extends Logging {
     val learningRate = boostingStrategy.learningRate
     val momentum = boostingStrategy.momentum
     val losses = new Array[Double](numIterations + 1)
-
+    val avgGradients = new Array[Double](numIterations + 1)
     // Prepare strategy for individual trees, which use regression with variance impurity.
     val forestStrategy = boostingStrategy.forestStrategy.copy
     forestStrategy.algo = Regression
@@ -170,6 +172,7 @@ object MyGradientBoostedTrees extends Logging {
 //      //input.persist(StorageLevel.MEMORY_AND_DISK) //todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
 //    }
     val (input, unpersistInput) = cached(uncachedInput)
+    val nInstances = input.count()
 
     timer.stop("init")
 
@@ -197,13 +200,16 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("building tree 0")
 
     // psuedo-residual for second iteration
-    val (g_init, l_init, unc) = loss.cachedGradientAndLoss(startingModel, input, subsample_proportion, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1")
+    val (g_init, l_init, unc) = loss.cachedGradientAndLoss(startingModel, input, subsample_proportion, if(! save_gradients) null else save_loss_to + "/" + "gradient1")
     data = g_init.map{ case (p, grad) =>
       p.copy(label = grad)
     }
     //val (d, unc) = NeuronUtils.cached(data)
     println("Initial Loss = " + l_init)
+    val g_init_avg = g_init.map(x => Math.abs(x._2)).sum() / nInstances
+    println("Mean Absolute Gradient = " + g_init_avg)
     losses(0) = l_init
+    avgGradients(0) = g_init_avg
     //data = d
     var uncacheData = unc
 
@@ -250,13 +256,16 @@ object MyGradientBoostedTrees extends Logging {
       //if(m <= numIterations) {
         println("Finding gradient and loss")
         val (g, l, unc2) = loss.cachedGradientAndLoss(partialModel, input, subsample_proportion,
-          if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m
+          if(! save_gradients) null else save_loss_to + "/" + "gradient" + m
         )
         data = g.map { case (p, grad) =>
           p.copy(label = grad)
         }
         println("Loss = " + l)
+        val g_avg = g.map(x => Math.abs(x._2)).sum / nInstances
+        println("Mean Absolute Gradient = " + g_avg)
         losses(m-1) = l
+        avgGradients(m-1) = g_avg
         //val (d2, unc2) = NeuronUtils.cached(data)
         //data = d2
         uncacheData = unc2
@@ -272,9 +281,11 @@ object MyGradientBoostedTrees extends Logging {
     logInfo("Internal timing for MyDecisionTree:")
     logInfo(s"$timer")
 
-    if(save_gradients_to != null) {
-      NeuronUtils.saveText(save_gradients_to, "loss.txt", losses.map(_.toString).reduce(_ + ", " + _))
-    }
+      NeuronUtils.saveText(save_loss_to, "malis.txt",
+        "Losses = " + losses.map(_.toString).reduce(_ + ", " + _) +
+          "\nGradients = " + avgGradients.map(_.toString).reduce(_ + ", " + _)
+      )
+
 //    (new MyGradientBoostedTreesModel(
 //      boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights), data, seg)
 

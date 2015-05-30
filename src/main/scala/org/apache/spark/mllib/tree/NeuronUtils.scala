@@ -198,7 +198,7 @@ object NeuronUtils {
   }
 
   def saveText(path:String, filename:String, text:String): Unit = {
-    println("Saving 2D: " + path + "/" + filename)
+    println("Saving Text: " + path + "/" + filename)
     val dir = new io.File(path)
     if (!dir.exists) dir.mkdirs()
 

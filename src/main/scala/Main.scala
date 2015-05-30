@@ -57,7 +57,7 @@ object Main {
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
-        dimensions_train.map(_.map(_.n_targets).sum).sum, splits, bins, s.malisSettings.subsampleProportion, s.featureSubsetStrategy, if(s.saveGradients) save_to + "/gradients" else null)
+        dimensions_train.map(_.map(_.n_targets).sum).sum, splits, bins, s.malisSettings.subsampleProportion, s.featureSubsetStrategy, save_to + "/malis", s.saveGradients)
 
     }
 
@@ -255,7 +255,7 @@ object Main {
       " treesPerIteration = "    + treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
       " master = "    + master + "\n" +
-      " malisGrad = "    + malisSettings.learningRate + "\n" +
+      " learningRate = "    + malisSettings.learningRate + "\n" +
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
       " testPartialModels = " + testPartialModels + "\n" +
@@ -303,13 +303,13 @@ object Main {
       treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
-      iterations    = m.getOrElse("iterations", "3").toInt,
-      saveGradients = m.getOrElse("saveGradients", "true").toBoolean,
+      iterations    = m.getOrElse("iterations", "0").toInt,
+      saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").filter(! _.isEmpty).map(_.toInt),
       testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
       malisSettings = MalisSettings(
-        learningRate     = m.getOrElse("malisGrad",     "1").toDouble,
+        learningRate     = m.getOrElse("learningRate",     "1").toDouble,
         subsampleProportion = m.getOrElse("subsampleProportion", "1").toDouble,
         momentum = m.getOrElse("momentum", "0").toDouble
       )

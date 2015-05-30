@@ -25,14 +25,13 @@ object MalisLoss extends MyLoss {
         gradAndLoss(d.toArray, subsample_proportion, if (save_to == null) null else save_to + "/" + id)
       }
       val grad = gradsAndLosses.flatMap(_._1)
-      val loss = gradsAndLosses.map(_._2).sum
+      val losses = gradsAndLosses.map(_._2)
       ///grads.toIterator
-      Iterator((grad, loss))
+      Iterator((grad, losses))
     }))
 
     val grad = g.flatMap(_._1)
-    println("Maximum Gradient = " + grad.map(_._2).max())
-    val loss = g.map(_._2).mean()
+    val loss = g.flatMap(_._2).mean()
     //make and save segs
 //    if (save_to != null) {
 //      segment(model, points, save_to).collect()
@@ -60,6 +59,7 @@ object MalisLoss extends MyLoss {
     val numSamples = (dimensions._1/subvolume_size) * (dimensions._2/subvolume_size)
     val submaps = for(x <- 0 until dimensions._1/subvolume_size;
                       y <- 0 until dimensions._2/subvolume_size
+                      if math.random < subsample_proportion
     ) yield {
         val minIdx = (x * subvolume_size, y * subvolume_size)
         val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
