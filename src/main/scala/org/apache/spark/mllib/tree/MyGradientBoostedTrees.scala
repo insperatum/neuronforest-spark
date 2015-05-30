@@ -157,6 +157,7 @@ object MyGradientBoostedTrees extends Logging {
     val loss = boostingStrategy.loss
     val learningRate = boostingStrategy.learningRate
     val momentum = boostingStrategy.momentum
+    val losses = new Array[Double](numIterations + 1)
 
     // Prepare strategy for individual trees, which use regression with variance impurity.
     val forestStrategy = boostingStrategy.forestStrategy.copy
@@ -196,12 +197,14 @@ object MyGradientBoostedTrees extends Logging {
     timer.stop("building tree 0")
 
     // psuedo-residual for second iteration
-
-    data = loss.gradient(startingModel, input, subsample_proportion, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1").map{ case (p, grad) => {
+    val (g_init, l_init, unc) = loss.cachedGradientAndLoss(startingModel, input, subsample_proportion, if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient1")
+    data = g_init.map{ case (p, grad) =>
       p.copy(label = grad)
-    }}
-    val (d, unc) = NeuronUtils.cached(data)
-    data = d
+    }
+    //val (d, unc) = NeuronUtils.cached(data)
+    println("Initial Loss = " + l_init)
+    losses(0) = l_init
+    //data = d
     var uncacheData = unc
 
     import math.abs
@@ -244,22 +247,24 @@ object MyGradientBoostedTrees extends Logging {
       m += 1
 
       uncacheData()
-      if(m <= numIterations) {
-        println("Finding gradient")
-        data = loss.gradient(partialModel, input, subsample_proportion,
+      //if(m <= numIterations) {
+        println("Finding gradient and loss")
+        val (g, l, unc2) = loss.cachedGradientAndLoss(partialModel, input, subsample_proportion,
           if(save_gradients_to==null) null else save_gradients_to + "/" + "gradient" + m
-        ).map { case (p, grad) => {
+        )
+        data = g.map { case (p, grad) =>
           p.copy(label = grad)
-        }}
-        val (d2, unc2) = NeuronUtils.cached(data)
-        data = d2
+        }
+        println("Loss = " + l)
+        losses(m-1) = l
+        //val (d2, unc2) = NeuronUtils.cached(data)
+        //data = d2
         uncacheData = unc2
-      }
+      //}
 
       for(i <- 1 until m) {
         baseLearnerWeights(i) = baseLearnerWeights(i) + learningRate * math.pow(momentum, m-i)
       }
-
     }
     unpersistInput()
     timer.stop("total")
@@ -267,6 +272,9 @@ object MyGradientBoostedTrees extends Logging {
     logInfo("Internal timing for MyDecisionTree:")
     logInfo(s"$timer")
 
+    if(save_gradients_to != null) {
+      NeuronUtils.saveText(save_gradients_to, "loss.txt", losses.map(_.toString).reduce(_ + ", " + _))
+    }
 //    (new MyGradientBoostedTreesModel(
 //      boostingStrategy.forestStrategy.algo, baseLearners, baseLearnerWeights), data, seg)
 

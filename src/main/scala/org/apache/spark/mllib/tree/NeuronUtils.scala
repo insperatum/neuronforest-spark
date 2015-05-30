@@ -39,8 +39,8 @@ object NeuronUtils {
     )
     cachedRDD.count() // force computation
 
-    if(sc.getRDDStorageInfo.length == nCached)
-      throw new Exception("Did not have enough memory to cache " + rdd + "! Failing.")
+//    if(sc.getRDDStorageInfo.length == nCached)
+//      throw new Exception("Did not have enough memory to cache " + rdd + "! Failing.")
 
     def unpersist() = {
       println(new SimpleDateFormat("HH:mm:ss").format(new Date()) + " Uncaching " + rdd)
@@ -197,8 +197,18 @@ object NeuronUtils {
     fcseg.close()
   }
 
+  def saveText(path:String, filename:String, text:String): Unit = {
+    println("Saving 2D: " + path + "/" + filename)
+    val dir = new io.File(path)
+    if (!dir.exists) dir.mkdirs()
+
+    val fwdims = new FileWriter(path + "/" + filename, false)
+    fwdims.write(text)
+    fwdims.close()
+  }
+
   def save2D(path:String, filename:String, that:Array[Double], dims:(Int, Int)): Unit = {
-    println("Saving 3D: " + path + "/" + filename)
+    println("Saving 2D: " + path + "/" + filename)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
 
@@ -206,20 +216,25 @@ object NeuronUtils {
     fwdims.write(dims._1 + " " + dims._2)
     fwdims.close()
 
-    val fc = new RandomAccessFile(path + "/" + filename, "rw").getChannel
-    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
-    val floatBuffer =  byteBuffer.asFloatBuffer()
-    that.foreach { d3 =>
-      floatBuffer.put(d3.toFloat)
-      fc.write(byteBuffer)
-      byteBuffer.rewind()
-      floatBuffer.clear()
-    }
-    fc.close()
+    val vals = that.map(x => (x * 255).toInt)
+    val img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
+    img.setRGB(0, 0, dims._2, dims._1, vals, 0, dims._2)
+    ImageIO.write(img, "png", new File(path + "/" + filename + ".png"))
+
+//    val fc = new RandomAccessFile(path + "/" + filename, "rw").getChannel
+//    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
+//    val floatBuffer =  byteBuffer.asFloatBuffer()
+//    that.foreach { d3 =>
+//      floatBuffer.put(d3.toFloat)
+//      fc.write(byteBuffer)
+//      byteBuffer.rewind()
+//      floatBuffer.clear()
+//    }
+//    fc.close()
   }
 
   def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double, Int /*inner_idx*/)], dimensions:Dimensions,
-                               description:String, training_time:Long, indexesAndGrads:Array[(Int, Double)] = null): Unit = {
+                               description:String, training_time:Long): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
     if(!dir.exists) dir.mkdirs()
@@ -275,14 +290,6 @@ object NeuronUtils {
 //    fclabels.close()
 //    fcpredictions.close()
 
-
-    if(indexesAndGrads != null) {
-      val fwgrads = new FileWriter(path + "/gradients.txt", false)
-      indexesAndGrads.foreach{ case (idx, grad) =>
-        fwgrads.write(idx + " " + grad + "\n")
-      }
-      fwgrads.close()
-    }
 
     println("\tComplete")
   }

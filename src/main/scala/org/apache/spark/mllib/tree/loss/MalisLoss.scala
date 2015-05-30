@@ -11,108 +11,84 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object MalisLoss extends MyLoss {
-  val subvolume_size = 20
+  val subvolume_size = 64
 
-  def gradient(model: MyModel,
+  override def cachedGradientAndLoss(model: MyModel,
                points: RDD[MyTreePoint],
               subsample_proportion: Double,
-               save_to:String = null): RDD[(MyTreePoint, Double)] = {
+               save_to:String = null): (RDD[(MyTreePoint, Double)], Double, Unit => Unit) = {
     val preds = model.predict(points.map(_.getFeatureVector))
-    val g = points.zip(preds).mapPartitionsWithIndex((i, k) => {
-      println("Gradient for partition " + i + "...")
-      grad(k.toArray, subsample_proportion, if (save_to == null) null else save_to + "/" + i).toIterator
-    })
 
+    val (g, uncache) = NeuronUtils.cached(points.zip(preds).mapPartitionsWithIndex((_, partition) => {
+      val gradsAndLosses = partition.toSeq.groupBy(_._1.data.id).toList.zipWithIndex.map { case ((id, d), _) =>
+        println("Gradient for " + id + "...")
+        gradAndLoss(d.toArray, subsample_proportion, if (save_to == null) null else save_to + "/" + id)
+      }
+      val grad = gradsAndLosses.flatMap(_._1)
+      val loss = gradsAndLosses.map(_._2).sum
+      ///grads.toIterator
+      Iterator((grad, loss))
+    }))
+
+    val grad = g.flatMap(_._1)
+    println("Maximum Gradient = " + grad.map(_._2).max())
+    val loss = g.map(_._2).mean()
     //make and save segs
 //    if (save_to != null) {
 //      segment(model, points, save_to).collect()
 //    }
-    g
+
+    (grad, loss, uncache)
   }
 
-  def segment(model: MyModel,
-               points: RDD[MyTreePoint], save_to:String): RDD[(Int, Int)] = {
-    val preds = model.predict(points.map(_.getFeatureVector))
-    println("segmenting!")
-    val s = points.zip(preds).mapPartitionsWithIndex{ case (i,k) =>
-      seg(k.toArray, save_to + "/" + i).toIterator
-    }
-    s
-  }
 
   def computeError(model: MyModel, data: RDD[MyTreePoint]): Double = ???
 
   case class Edge(point:MyTreePoint, weight:Double, from:Int, to:Int, dir:Int)
 
-  def grad(pointsAndPreds: Array[(MyTreePoint, Double)], subsample_proportion:Double = 1, save_to:String) = {
-    val subvolume_size = 20
+  def gradAndLoss(pointsAndPreds: Array[(MyTreePoint, Double)], subsample_proportion:Double = 1, save_to:String) = {
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
-    var dMin = Double.MaxValue //todo:remove
-    var df:Iterable[Int] = null //
-    var dt:Iterable[Int] = null //
+//    val numSamples = (dimensions._1 * dimensions._2 * subsample_proportion / (subvolume_size * subvolume_size)).toInt + 1
+//    val submaps = for(i <- 0 until numSamples) yield {
+//      val minIdx = (Random.nextInt(dimensions._1 - subvolume_size), Random.nextInt(dimensions._1 - subvolume_size))
+//      val maxIdx = (minIdx._1 + subvolume_size - 1, minIdx._2 + subvolume_size - 1)
+//      val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
+//      gradAndLossForSubvolume(pointsAndPreds, indexer)
+//    }
 
-    val submaps = for(x <- 0 to dimensions._1/subvolume_size;
-        y <- 0 to dimensions._2/subvolume_size;
-        if math.random < subsample_proportion) yield {
-      val minIdx = (x * subvolume_size, y * subvolume_size)
-      val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
-      val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
-      val maxIdx = (max_x, max_y)
-      val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
-      val (grads, d, df_sub, dt_sub) = gradForSubvolume(pointsAndPreds, indexer)
-      if(d < dMin) {
-        dMin = d
-        df = df_sub
-        dt = dt_sub
-      }
-      grads
+    val numSamples = (dimensions._1/subvolume_size) * (dimensions._2/subvolume_size)
+    val submaps = for(x <- 0 until dimensions._1/subvolume_size;
+                      y <- 0 until dimensions._2/subvolume_size
+    ) yield {
+        val minIdx = (x * subvolume_size, y * subvolume_size)
+        val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
+        val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
+        val maxIdx = (max_x, max_y)
+        val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
+        gradAndLossForSubvolume(pointsAndPreds, indexer)
     }
-    println("\n\nLowest del was " + dMin + "\n\n")
 
-    val grads = submaps.reduce(_++_)
+    val (grads, lossSum) = submaps.reduce((x, y) => (x._1 ++ y._1, x._2 + y._2))
+    val loss = lossSum / numSamples
     if(save_to != null) {
-      val seg_save = Array.fill(pointsAndPreds.length)(0)
-      df.foreach(i => seg_save(i) = 1)
-      dt.foreach(i => seg_save(i) = 2)
-      NeuronUtils.saveSeg(save_to, "maximin_seg.raw", seg_save)
-
-      NeuronUtils.save2D(save_to, "points.raw", pointsAndPreds.map(_._1.label), dimensions)
-      NeuronUtils.save2D(save_to, "preds.raw", pointsAndPreds.map(_._2), dimensions)
+//      val seg_save = Array.fill(pointsAndPreds.length)(0)
+//      df.foreach(i => seg_save(i) = 1)
+//      dt.foreach(i => seg_save(i) = 2)
+//      NeuronUtils.saveSeg(save_to, "maximin_seg.raw", seg_save)
+//
+//      NeuronUtils.save2D(save_to, "points.raw", pointsAndPreds.map(_._1.label), dimensions)
+//      NeuronUtils.save2D(save_to, "preds.raw", pointsAndPreds.map(_._2), dimensions)
 
       val grad_save = Array.fill[Double](pointsAndPreds.length)(0.0)
       grads.foreach(g => grad_save(g._1.inner_idx)=g._2)
-      NeuronUtils.save2D(save_to, "grads.raw", grad_save, dimensions)
+      NeuronUtils.save2D(save_to, "grads", grad_save, dimensions)
+
+      NeuronUtils.saveText(save_to, "loss", loss.toString)
     }
 
-    grads
+    (grads, loss)
   }
-
-  def seg(pointsAndPreds: Array[(MyTreePoint, Double)], save_to:String): Seq[(Int, Int)] = {
-    // this is all just for debugging
-    val dimensions = pointsAndPreds(0)._1.data.dimensions
-
-    val submaps = for(x <- 0 to dimensions._1/subvolume_size;
-                      y <- 0 to dimensions._2/subvolume_size) yield {
-      val minIdx = (x * subvolume_size, y * subvolume_size)
-      val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
-      val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
-      val maxIdx = (max_x, max_y)
-      val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
-      val seg = segForSubvolume(pointsAndPreds, indexer)
-      val idxs_segs = (0 until indexer.size).map(indexer.innerToOuter).zip(seg)
-      idxs_segs
-    }
-    val segs = submaps.reduce(_ ++ _)
-
-    if(save_to != null) {
-      val seg_save = Array.fill(pointsAndPreds.length)(0)
-      segs.foreach{case (i, s) => seg_save(i)=s}
-      NeuronUtils.saveSeg(save_to, "seg.raw", seg_save)
-    }
-    segs
-  }
-
 
   def segForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer2D):Array[Int] = {
     print("Seg for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
@@ -129,18 +105,15 @@ object MalisLoss extends MyLoss {
     seg
   }
 
-  def gradForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer2D) = {
+  def gradAndLossForSubvolume(pointsAndPreds: Array[(MyTreePoint, Double)], indexer:Indexer2D) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
-    val scaleFactor = 2d / (Math.pow(subvolume_size,3) * Math.pow(subvolume_size-1, 3))
+    val n = Math.pow(subvolume_size,2)
+    val scaleFactor = (2d / (n * (n-1)))// (nC2)^-1
 
     print("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
     val gradients = new ArrayBuffer[(MyTreePoint, Double)]()
-
-    //todo: all this shit can go once I've got good pictures
-    var df:Map[Int, Seq[Int]] = null
-    var dt:Map[Int, Seq[Int]] = null
-    var d:Double = Double.PositiveInfinity
+    var loss = 0d
 
     def innerFunc(edge:Edge, descendants:Int => Seq[Int], ancFrom:Int, ancTo:Int) = {
       //println("Adding wedge with weight " + edge.weight)
@@ -158,30 +131,20 @@ object MalisLoss extends MyLoss {
         if(segFrom == segTo && segFrom != -1) nPos += subsetFrom.size * subsetTo.size
         else nNeg += subsetFrom.size * subsetTo.size
       }
-
       val del = (nPos - aff*(nNeg + nPos)) * scaleFactor
-
-
+      loss += (nPos * (1-aff)*(1-aff) + nNeg * aff*aff) * scaleFactor
       gradients.append(edge.point -> del)
-
-      if(del < d) {
-        df = descFrom
-        dt = descTo
-        d = del
-      }
     }
 
     kruskals(pointsAndPreds, indexer, innerFunc = innerFunc)
 
-    val df_out = df.flatMap(_._2.map(indexer.innerToOuter))
-    val dt_out = dt.flatMap(_._2.map(indexer.innerToOuter))
-
-    val grads = gradients.groupBy(_._1).map{ case (p, s) =>
+    val grad = gradients.groupBy(_._1).map{ case (p, s) =>
       p -> s.map(_._2).reduce(_+_)
     }
 
     println(" (took " + (System.currentTimeMillis() - t) + "ms)")
-    (grads, d, df_out, dt_out)
+    (grad, loss)
+
   }
 
   def kruskals(pointsAndAffs: Array[(MyTreePoint, Double)], indexer:Indexer2D, edgeFilter:Edge => Boolean = _ => true,

@@ -272,13 +272,13 @@ object Main {
     val m = args.map(_.split("=")).map(arr => arr(0) -> (if(arr.length>1) arr(1) else "")).toMap
 
     val train_subvolumes    = {
-      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.take(4).reduce(_ + "," + _))
+      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.take(1).reduce(_ + "," + _))
       val idx = str.indexOf("*")
       if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
       else str.split(",")
     }
     val test_subvolumes    = {
-      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.drop(4).take(4).reduce(_ + "," + _))
+      val str = m.getOrElse("subvolumes", new File("/isbi_data").listFiles().map(_.getName).sorted.drop(1).take(1).reduce(_ + "," + _))
       val idx = str.indexOf("*")
       if(idx != -1) Array.fill(str.substring(idx + 1).toInt)(str.substring(0, idx))
       else str.split(",")
@@ -294,7 +294,7 @@ object Main {
       subvolumes    = Subvolumes(train_subvolumes, test_subvolumes),
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
       impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
-      maxDepth      = m.getOrElse("maxDepth",      "5").toInt,
+      maxDepth      = m.getOrElse("maxDepth",      "15").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
       initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
@@ -303,13 +303,13 @@ object Main {
       treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
-      iterations    = m.getOrElse("iterations", "0").toInt,
-      saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
+      iterations    = m.getOrElse("iterations", "3").toInt,
+      saveGradients = m.getOrElse("saveGradients", "true").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").filter(! _.isEmpty).map(_.toInt),
       testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
       malisSettings = MalisSettings(
-        learningRate     = m.getOrElse("malisGrad",     "100").toDouble,
+        learningRate     = m.getOrElse("malisGrad",     "1").toDouble,
         subsampleProportion = m.getOrElse("subsampleProportion", "1").toDouble,
         momentum = m.getOrElse("momentum", "0").toDouble
       )

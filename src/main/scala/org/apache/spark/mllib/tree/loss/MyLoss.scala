@@ -31,11 +31,11 @@ import org.apache.spark.rdd.RDD
 @DeveloperApi
 trait MyLoss extends Serializable {
 
-  def gradient(
+  def cachedGradientAndLoss(
       model: MyModel,
       points: RDD[MyTreePoint],
       subsample_proportion: Double,
-      save_to:String = null): RDD[(MyTreePoint, Double)]
+      save_to:String = null): (RDD[(MyTreePoint, Double)], Double, Unit => Unit)
 
   def computeError(model: MyModel, data: RDD[MyTreePoint]): Double
 
