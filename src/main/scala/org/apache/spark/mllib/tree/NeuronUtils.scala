@@ -1,6 +1,7 @@
 package org.apache.spark.mllib.tree
 
-import java.awt.image.BufferedImage
+import java.awt.Color
+import java.awt.image.{Raster, BufferedImage}
 import java.io
 import java.io.{File, RandomAccessFile, FileWriter}
 import java.nio.{FloatBuffer, ByteBuffer}
@@ -215,7 +216,7 @@ object NeuronUtils {
     fwdims.write(dims._1 + " " + dims._2)
     fwdims.close()
 
-    val vals = that.map(x => (x * 255).toInt)
+    val vals = that.map(x => grayToRGB((x * 255).toInt))
     val img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
     img.setRGB(0, 0, dims._2, dims._1, vals, 0, dims._2)
     ImageIO.write(img, "png", new File(path + "/" + filename + ".png"))
@@ -230,6 +231,10 @@ object NeuronUtils {
 //      floatBuffer.clear()
 //    }
 //    fc.close()
+  }
+
+  def grayToRGB(x:Int) = {
+    new Color(x, x, x).getRGB
   }
 
   def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double, Int /*inner_idx*/)], dimensions:Dimensions,
@@ -252,12 +257,12 @@ object NeuronUtils {
 
     val labelsAndPredictionsSeq = labelsAndPredictions.toList
 
-    val pred_vals = labelsAndPredictionsSeq.map(x => (x._2 * 255).toInt).toArray
+    val pred_vals = labelsAndPredictionsSeq.map(x => grayToRGB( (x._2*255).toInt) ).toArray
     val pred_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
     pred_img.setRGB(0, 0, dims._2, dims._1, pred_vals, 0, dims._2)
     ImageIO.write(pred_img, "png", new File(path + "/predictions.png"))
 
-    val label_vals = labelsAndPredictionsSeq.map(x => (x._1 * 255).toInt).toArray
+    val label_vals = labelsAndPredictionsSeq.map(x => grayToRGB((x._1 * 255).toInt)).toArray
     val lab_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
     lab_img.setRGB(0, 0, dims._2, dims._1, label_vals, 0, dims._2)
     ImageIO.write(lab_img, "png", new File(path + "/labels.png"))

@@ -17,27 +17,13 @@ def convert(imagesDir):
 	labels = TIFF.open(imagesDir + "/labels.tif", "w")
 	predictions = TIFF.open(imagesDir + "/predictions.tif", "w")
 
-	maxlabel = -999999
-	maxprediction = -999999
-	minlabel = 999999
-	minprediction = 999999
 	for name in trainNames:
 		image = misc.imread(imagesDir + "/" + name + '/labels.png').astype(np.float32)
-		maxlabel = max(maxlabel, image.max())
-		minlabel = min(minlabel, image.min())
-		image = misc.imread(imagesDir + "/" + name + '/labels.png').astype(np.float32)
-		maxprediction = max(maxprediction, image.max())
-		minprediction = min(minprediction, image.min())	
-	
-	print("Label values: [" + str(minlabel) + ", " + str(maxlabel) + "]")
-	print("Prediction values: [" + str(minprediction) + ", " + str(maxprediction) + "]")
-
-	for name in trainNames:
-		image = misc.imread(imagesDir + "/" + name + '/labels.png').astype(np.float32)
-		image = (image - minlabel) / (maxlabel - minlabel)
+		image = image / 255
 		labels.write_image(image)
 		image = misc.imread(imagesDir + "/" + name + '/predictions.png')
-		image = (image - minprediction) / (maxprediction - minprediction)
+		image = image / 255
 		predictions.write_image(image)
 
-convert('/isbi_predictions/2015-05-29 09-10-02/predictions/partial10/train')
+convert('/isbi_predictions/2015-05-31 13-19-00/predictions/partial100/depth15/train')
+convert('/isbi_predictions/2015-05-31 13-19-00/predictions/partial100/depth15/test')
