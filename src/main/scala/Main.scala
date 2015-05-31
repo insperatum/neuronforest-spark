@@ -171,7 +171,7 @@ object Main {
         if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
-            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + i + "/" + id,
+            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + id,
               d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_train(i)(j), s.toVerboseString, training_time
               /*,indexesAndGrads*/)
           }.toIterator
@@ -200,7 +200,7 @@ object Main {
         if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
-            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/test/" + i + "/" + id,
+            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/test/" + id,
               d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_test(i)(j), s.toVerboseString, training_time
               /*,indexesAndGrads*/)
           }.toIterator
