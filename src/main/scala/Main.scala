@@ -35,7 +35,7 @@ object Main {
 
 //    //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = true)
+    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 
@@ -104,7 +104,7 @@ object Main {
       println("Saved")
     }
     //-------------------------- Test ---------------------------------------
-    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.subvolumes.test, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = false)
+    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.test, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = false)
 
 //    val allPartialModels:Seq[MyEnsembleModelNew[_]] = model.getPartialModels
 
@@ -231,7 +231,7 @@ object Main {
 
   case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double)
   case class Subvolumes(train: Seq[String], test:Seq[String])
-  case class RunSettings(maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
+  case class RunSettings(numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
                          subvolumes:Subvolumes, featureSubsetStrategy:String,
                          impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel, treesPerIteration:Int,
                          dimOffsets:Seq[Int], master:String, save_model_to:String,
@@ -239,7 +239,8 @@ object Main {
                          useNodeIdCache:Boolean, malisSettings:MalisSettings) {
     def toVerboseString =
       "RunSettings:\n" +
-      " maxMemoryInMB = " + maxMemoryInMB + "\n" +
+        " numExecutors = " + numExecutors + "\n" +
+    " maxMemoryInMB = " + maxMemoryInMB + "\n" +
       " localDir = " + localDir + "\n" +
       " data_root = "     + data_root + "\n" +
       " save_to = "       + save_to + "\n" +
@@ -285,6 +286,7 @@ object Main {
     }
 
     RunSettings(
+      numExecutors  = m.getOrElse("numExecutors", "1").toInt,
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
       data_root     = m.getOrElse("data_root",     "/isbi_data"),
       save_to       = m.getOrElse("save_to",       "/isbi_predictions"),
