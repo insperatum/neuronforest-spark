@@ -18,7 +18,7 @@
 package org.apache.spark.mllib.tree.impurity
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
-
+import org.apache.spark.mllib.tree.DoubleTuple
 
 /**
  * :: Experimental ::
@@ -48,12 +48,12 @@ object MyVariance extends MyImpurity {
    */
   @DeveloperApi
   override def calculate(count: Double,
-                         sum1: Double,
-                         sumSquares1: Double): Double = {
+                         sum1: Double, sum2: Double,
+                         sumSquares1: Double, sumSquares2: Double): Double = {
     if (count == 0) {
       return 0
     }
-    val squaredLoss = sumSquares1 - (sum1 * sum1) / count
+    val squaredLoss = (sumSquares1 + sumSquares2) - (sum1 * sum1 + sum2 * sum2) / count
     squaredLoss / count
   }
 
@@ -71,17 +71,19 @@ object MyVariance extends MyImpurity {
  * Note: Instances of this class do not hold the data; they operate on views of the data.
  */
 private[tree] class MyVarianceAggregator()
-  extends MyImpurityAggregator(statsSize = 3) with Serializable {
+  extends MyImpurityAggregator(statsSize = 5) with Serializable {
 
   /**
    * Update stats for one (node, feature, bin) with the given label.
    * @param allStats  Flat stats array, with stats for this (node, feature, bin) contiguous.
    * @param offset    Start index of stats for this (node, feature, bin).
    */
-  def update(allStats: Array[Double], offset: Int, label: Double, instanceWeight: Double): Unit = {
+  def update(allStats: Array[Double], offset: Int, label: DoubleTuple, instanceWeight: Double): Unit = {
     allStats(offset) += instanceWeight
-    allStats(offset + 1) += instanceWeight * label
-    allStats(offset + 2) += instanceWeight * label * label
+    allStats(offset + 1) += instanceWeight * label._1
+    allStats(offset + 2) += instanceWeight * label._2
+    allStats(offset + 3) += instanceWeight * label._1 * label._1
+    allStats(offset + 4) += instanceWeight * label._2 * label._2
   }
 
   /**
@@ -103,8 +105,8 @@ private[tree] class MyVarianceAggregator()
  */
 private[tree] class MyVarianceCalculator(stats: Array[Double]) extends MyImpurityCalculator(stats) {
 
-  require(stats.size == 3,
-    s"MyVarianceCalculator requires sufficient statistics array stats to be of length 3," +
+  require(stats.size == 5,
+    s"MyVarianceCalculator requires sufficient statistics array stats to be of length 7," +
     s" but was given array of length ${stats.size}.")
 
   /**
@@ -115,7 +117,7 @@ private[tree] class MyVarianceCalculator(stats: Array[Double]) extends MyImpurit
   /**
    * Calculate the impurity from the stored sufficient statistics.
    */
-  def calculate(): Double = MyVariance.calculate(stats(0), stats(1), stats(2))
+  def calculate(): Double = MyVariance.calculate(stats(0), stats(1), stats(2), stats(3), stats(4))
 
   /**
    * Number of data points accounted for in the sufficient statistics.
@@ -125,15 +127,15 @@ private[tree] class MyVarianceCalculator(stats: Array[Double]) extends MyImpurit
   /**
    * Prediction which should be made based on the sufficient statistics.
    */
-  override def predict: Double = if (count == 0) {
-    0.0
+  override def predict: DoubleTuple = if (count == 0) {
+    DoubleTuple.Zero
   } else {
-    stats(1)/count
+    DoubleTuple(stats(1)/count, stats(2)/count)
   }
 
   override def toString: String = {
-    s"MyVarianceAggregator(cnt = ${stats(0)}, sum1 = ${stats(1)}, " +
-    s"sumsq1 = ${stats(2)}"
+    s"MyVarianceAggregator(cnt = ${stats(0)}, sum1 = ${stats(1)}, sum2 = ${stats(2)}, " +
+    s"sumsq1 = ${stats(3)}, sumsq2 = ${stats(4)})"
   }
 
 }

@@ -18,7 +18,7 @@
 package org.apache.spark.mllib.tree.impurity
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
-
+import org.apache.spark.mllib.tree.DoubleTuple
 
 /**
  * :: Experimental ::
@@ -49,8 +49,8 @@ trait MyImpurity extends Serializable {
    * @return information value, or 0 if count = 0
    */
   @DeveloperApi
-  def calculate(count: Double, sum1: Double,
-                sumSquares1: Double): Double
+  def calculate(count: Double, sum1: Double, sum2: Double,
+                sumSquares1: Double, sumSquares2: Double): Double
 }
 
 /**
@@ -80,7 +80,7 @@ private[tree] abstract class MyImpurityAggregator(val statsSize: Int) extends Se
    * @param allStats  Flat stats array, with stats for this (node, feature, bin) contiguous.
    * @param offset    Start index of stats for this (node, feature, bin).
    */
-  def update(allStats: Array[Double], offset: Int, label: Double, instanceWeight: Double): Unit
+  def update(allStats: Array[Double], offset: Int, label: DoubleTuple, instanceWeight: Double): Unit
 
   /**
    * Get an [[MyImpurityCalculator]] for a (node, feature, bin).
@@ -148,12 +148,12 @@ private[tree] abstract class MyImpurityCalculator(val stats: Array[Double]) {
   /**
    * Prediction which should be made based on the sufficient statistics.
    */
-  def predict: Double
+  def predict: DoubleTuple
 
   /**
    * Probability of the label given by [[predict]], or -1 if no probability is available.
    */
-  def prob(label: Double): Double = -1
+  def prob(label: DoubleTuple): Double = -1
 
   /**
    * Return the index of the largest array element.

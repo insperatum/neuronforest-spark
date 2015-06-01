@@ -19,7 +19,7 @@ package org.apache.spark.mllib.tree.impl
 
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.MyLabeledPoint
-import org.apache.spark.mllib.tree.{BinnedFeatureData}
+import org.apache.spark.mllib.tree.{BinnedFeatureData, DoubleTuple}
 import org.apache.spark.mllib.tree.model.Bin
 import org.apache.spark.rdd.RDD
 
@@ -35,7 +35,7 @@ import org.apache.spark.rdd.RDD
  *      "Ordered categorical features" are categorical features with high arity,
  *      or any categorical feature used in regression or binary classification.
  */
-case class MyTreePoint(label: Double, seg:Int, data:BinnedFeatureData, inner_idx:Int, outer_idx:Int)
+case class MyTreePoint(label: DoubleTuple, seg:Int, data:BinnedFeatureData, inner_idx:Int, outer_idx:Int)
 //Inner index is the index of the training example (within this partition)
 //Outer index is the index of the feature (in the featuredata)
 

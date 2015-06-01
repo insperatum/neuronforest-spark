@@ -19,7 +19,7 @@ package org.apache.spark.mllib.regression
 
 import org.apache.spark.SparkException
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
-
+import org.apache.spark.mllib.tree.DoubleTuple
 import org.apache.spark.mllib.util.NumericParser
 
 import scala.beans.BeanInfo
@@ -31,7 +31,7 @@ import scala.beans.BeanInfo
  * @param features List of features for this data point.
  */
 @BeanInfo
-case class MyLabeledPoint(label: Double, features: Vector) { //todo get rid of this class
+case class MyLabeledPoint(label: DoubleTuple, features: Vector) { //todo get rid of this class
   override def toString: String = {
     "(%s,%s)".format(label, features)
   }
@@ -50,7 +50,7 @@ object MyLabeledPoint {
     /*
     if (s.startsWith("(")) {
       NumericParser.parse(s) match {
-        case Seq(label: Double, numeric: Any) =>
+        case Seq(label: Double3, numeric: Any) =>
           MyLabeledPoint(label, Vectors.parseNumeric(numeric))
         case other =>
           throw new SparkException(s"Cannot parse $other.")

@@ -76,11 +76,11 @@ object NeuronUtils {
       val d = p.flatMap { case (rawData, dimensions) =>
         val targets = getTargets(data_root, rawData.id, dimensions.n_targets, dimensions.target_index_offset, proportion, fromFront)
 
-        val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
+        val indexer = new Indexer(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
 
         val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets, offsetMultiplier)
         targets.zipWithIndex.map { case (ts, idx) =>
-          val y = ts(0)
+          val y = DoubleTuple(ts)
           //val seg = ts(2).toInt
           val seg = 0
           val outer_idx = indexer.innerToOuter(idx)
@@ -198,6 +198,7 @@ object NeuronUtils {
     fcseg.close()
   }
 
+
   def saveText(path:String, filename:String, text:String): Unit = {
     println("Saving Text: " + path + "/" + filename)
     val dir = new io.File(path)
@@ -221,17 +222,6 @@ object NeuronUtils {
     val img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
     img.setRGB(0, 0, dims._2, dims._1, vals, 0, dims._2)
     ImageIO.write(img, "png", new File(path + "/" + filename + ".png"))
-
-//    val fc = new RandomAccessFile(path + "/" + filename, "rw").getChannel
-//    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
-//    val floatBuffer =  byteBuffer.asFloatBuffer()
-//    that.foreach { d3 =>
-//      floatBuffer.put(d3.toFloat)
-//      fc.write(byteBuffer)
-//      byteBuffer.rewind()
-//      floatBuffer.clear()
-//    }
-//    fc.close()
   }
 
   def grayToRGB(x:Int) = {
@@ -239,7 +229,7 @@ object NeuronUtils {
     new Color(y, y, y).getRGB
   }
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double, Int /*inner_idx*/)], dimensions:Dimensions,
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(DoubleTuple, DoubleTuple, Int /*inner_idx*/)], dimensions:Dimensions,
                                description:String, training_time:Long): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
@@ -259,12 +249,12 @@ object NeuronUtils {
 
     val labelsAndPredictionsSeq = labelsAndPredictions.toList
 
-    val pred_vals = labelsAndPredictionsSeq.map(x => grayToRGB( (x._2*255).toInt) ).toArray
+    val pred_vals = labelsAndPredictionsSeq.map(x => grayToRGB( (x._2.avg * 255).toInt) ).toArray
     val pred_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
     pred_img.setRGB(0, 0, dims._2, dims._1, pred_vals, 0, dims._2)
     ImageIO.write(pred_img, "png", new File(path + "/predictions.png"))
 
-    val label_vals = labelsAndPredictionsSeq.map(x => grayToRGB((x._1 * 255).toInt)).toArray
+    val label_vals = labelsAndPredictionsSeq.map(x => grayToRGB((x._1.avg * 255).toInt)).toArray
     val lab_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
     lab_img.setRGB(0, 0, dims._2, dims._1, label_vals, 0, dims._2)
     ImageIO.write(lab_img, "png", new File(path + "/labels.png"))
@@ -277,24 +267,6 @@ object NeuronUtils {
     }}
     fwlabels.close()
     fwpredictions.close()*/
-
-//
-//    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
-//    val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
-//    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
-//    val floatBuffer =  byteBuffer.asFloatBuffer()
-//    labelsAndPredictions.foreach{ case (label, prediction) =>
-//      floatBuffer.put(label.toFloat)
-//      fclabels.write(byteBuffer)
-//      byteBuffer.rewind()
-//      floatBuffer.clear()
-//      floatBuffer.put(prediction.toFloat)
-//      fcpredictions.write(byteBuffer)
-//      byteBuffer.rewind()
-//      floatBuffer.clear()
-//    }
-//    fclabels.close()
-//    fcpredictions.close()
 
 
     println("\tComplete")
