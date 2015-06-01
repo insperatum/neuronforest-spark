@@ -39,14 +39,11 @@ export SUBVOLUMES_TRAIN_FULL=r1f0s0,r1f0s1,r1f0s10,r1f0s11,r1f0s12,r1f0s13,r1f0s
 export SUBVOLUMES_TEST=r0f0s0,r0f0s1,r0f0s10,r0f0s11,r0f0s12,r0f0s13,r0f0s14,r0f0s15,r0f0s16,r0f0s17,r0f0s18,r0f0s19,r0f0s2,r0f0s20,r0f0s21,r0f0s22,r0f0s23,r0f0s24,r0f0s25,r0f0s26,r0f0s27,r0f0s28,r0f0s29,r0f0s3,r0f0s4,r0f0s5,r0f0s6,r0f0s7,r0f0s8,r0f0s9
 
 #init
-echo "subvolumes: $1"
-echo "offsets: $2"
-echo "trees: $3"
-echo "depth: $4"
+if [ -z "$4" ]; then echo "Please give 4 arguments!"; exit 1; fi
 source ~/isbi/subvolumes.sh
 ~/isbi/clear.sh;
 dt=$(date '+%Y%m%d_%H%M%S');
-~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 subvolumes_test=$SUBVOLUMES_TEST dimOffsets=$2 learningRate=1 initialTrees=$3 save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 iterations=0 maxDepth=$4 testPartialModels=1 testDepths=15 useNodeIdCache=false subsampleProportion=1 momentum=0 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 subvolumes_test=$SUBVOLUMES_TEST dimOffsets=$2 learningRate=1 initialTrees=$3 save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 iterations=0 maxDepth=$4 testPartialModels=1 testDepths=$4 useNodeIdCache=false subsampleProportion=1 momentum=0 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
 ~/isbi/save.sh
 
 
@@ -59,11 +56,16 @@ source aws-credentials && aws s3 cp /mnt/isbi_models/ s3://neuronforest.sparkdat
 
 
 
-
+#load model
+source ~/isbi/subvolumes.sh
+~/isbi/clear.sh;
+dt=$(date '+%Y%m%d_%H%M%S');
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$SUBVOLUMES_TRAIN_FULL subvolumes_test=$SUBVOLUMES_TEST dimOffsets=-0 learningRate=1 loadModel="/mnt/initial2" save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 iterations=10 maxDepth=15 testPartialModels=100 testDepths=2,4,6,8,10,12,14,16,18,20,22,24,26,28,30 useNodeIdCache=false subsampleProportion=1 momentum=0 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/isbi/save.sh
 
 ###WATCHING
 #head and tail
-export latest="logs/`ls logs | tail -n 1 | awk '{print $1;}'` stdout.txt"; head -n27 "$latest" && echo "" && tail -f "$latest"
+export latest="logs/`ls logs | tail -n 1 | awk '{print $1;}'` stdout.txt"; head -n27 "$latest" && echo "---------------" && tail -f "$latest"
 
 
 

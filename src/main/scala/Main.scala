@@ -17,7 +17,17 @@ import org.apache.spark.mllib.tree.configuration.Algo._
 
 object Main {
 
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
+    try {
+      mainbody(args)
+    } catch {
+      case e =>
+        println("Error:\n" + e)
+        throw e
+    }
+  }
+
+  def mainbody(args:Array[String]) {
     val start_time = System.currentTimeMillis()
 
     //------------------------ Init ---------------------------------------

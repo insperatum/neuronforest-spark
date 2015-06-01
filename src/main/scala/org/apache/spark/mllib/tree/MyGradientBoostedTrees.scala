@@ -246,7 +246,7 @@ object MyGradientBoostedTrees extends Logging {
 
       println("Training partial model")
       val partialModel = new MyGradientBoostedTreesModelNew(
-        Regression, baseLearners.slice(0, m), baseLearnerWeights.slice(0, m))
+        Regression, baseLearners.slice(0, m+1), baseLearnerWeights.slice(0, m+1))
       logDebug("error of gbt = " + loss.computeError(partialModel, input))
       // Update data with pseudo-residuals
 //      data = input.map(point => MyLabeledPoint(loss.gradient(partialModel, point) * -1,

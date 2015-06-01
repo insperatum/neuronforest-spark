@@ -21,9 +21,14 @@ def convert(imagesDir):
 		image = misc.imread(imagesDir + "/" + name + '/labels.png').astype(np.float32)
 		image = image / 255
 		labels.write_image(image)
-		image = misc.imread(imagesDir + "/" + name + '/predictions.png')
+		image = misc.imread(imagesDir + "/" + name + '/predictions.png').astype(np.float32)
 		image = image / 255
 		predictions.write_image(image)
 
-convert('/isbi_predictions/2015-05-31 13-19-00/predictions/partial100/depth15/train')
-convert('/isbi_predictions/2015-05-31 13-19-00/predictions/partial100/depth15/test')
+folders = [
+	"/isbi_predictions/2015-06-01 09-23-35/predictions/partial6/depth15/test"
+	]
+	
+for f in folders:
+	print(f)
+	convert(f)

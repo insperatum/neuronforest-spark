@@ -39,7 +39,7 @@ object NeuronUtils {
       p.next().toIterator
     )
     cachedRDD.count() // force computation
-
+    println(new SimpleDateFormat("HH:mm:ss").format(new Date()) + " ...complete.")
 //    if(sc.getRDDStorageInfo.length == nCached)
 //      throw new Exception("Did not have enough memory to cache " + rdd + "! Failing.")
 
@@ -234,7 +234,8 @@ object NeuronUtils {
   }
 
   def grayToRGB(x:Int) = {
-    new Color(x, x, x).getRGB
+    val y = Math.min(255, Math.max(x, 0))
+    new Color(y, y, y).getRGB
   }
 
   def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(Double, Double, Int /*inner_idx*/)], dimensions:Dimensions,
