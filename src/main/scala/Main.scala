@@ -21,7 +21,7 @@ object Main {
     try {
       mainbody(args)
     } catch {
-      case e =>
+      case e:Throwable =>
         println("Error:\n" + e)
         throw e
     }
@@ -310,8 +310,8 @@ object Main {
       subvolumes    = Subvolumes(train_subvolumes, test_subvolumes),
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
       //impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
-      maxDepth      = m.getOrElse("maxDepth",      "15").toInt,
-      maxBins       = m.getOrElse("maxBins",       "100").toInt,
+      maxDepth      = m.getOrElse("maxDepth",      "10").toInt,
+      maxBins       = m.getOrElse("maxBins",       "10").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
       initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
                       if(m.contains("loadModel")) InitialLoadedModel(m("loadModel"))
@@ -320,7 +320,7 @@ object Main {
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       offsetMultiplier    = m.getOrElse("offsetMultiplier",    "1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
-      iterations    = m.getOrElse("iterations", "0").toInt,
+      iterations    = m.getOrElse("iterations", "2").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
       testPartialModels = m.getOrElse("testPartialModels", "").split(",").filter(! _.isEmpty).map(_.toInt),
       testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),

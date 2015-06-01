@@ -172,7 +172,6 @@ object MyGradientBoostedTrees extends Logging {
 //      //input.persist(StorageLevel.MEMORY_AND_DISK) //todo WORK OUT WHY I CAN'T SAVE IN MEMORY!
 //    }
     val (input, unpersistInput) = cached(uncachedInput)
-    val nInstances = input.count()
 
     timer.stop("init")
 
@@ -207,8 +206,8 @@ object MyGradientBoostedTrees extends Logging {
     }
     //val (d, unc) = NeuronUtils.cached(data)
     println("Initial Loss = " + l_init)
-    val g_init_avg = g_init.map(_._2.sq).sum() / nInstances
-    println("Mean Square Gradient = " + g_init_avg)
+    val g_init_avg = math.sqrt(g_init.map(_._2.sq).mean())
+    println("Root Mean Square Gradient = " + g_init_avg)
     losses(0) = l_init
     avgGradients(0) = g_init_avg
     //data = d
@@ -264,8 +263,8 @@ object MyGradientBoostedTrees extends Logging {
           p.copy(label = grad)
         }
         println("Loss = " + l)
-        val g_avg = g.map(_._2.sq).sum / nInstances
-        println("Mean Square Gradient = " + g_avg)
+        val g_avg = math.sqrt(g.map(_._2.sq).mean())
+        println("Root Mean Square Gradient = " + g_avg)
         losses(m-1) = l
         avgGradients(m-1) = g_avg
         //val (d2, unc2) = NeuronUtils.cached(data)

@@ -109,13 +109,15 @@ object MalisLoss extends MyLoss {
   def gradAndLossForSubvolume(pointsAndPreds: Array[(MyTreePoint, DoubleTuple)], indexer:Indexer) = {
     val seg = segForSubvolume(pointsAndPreds, indexer)
     val n = Math.pow(subvolume_size,2)
-    val scaleFactor = (2d / (n * (n-1)))// (nC2)^-1
+    val scaleFactor = 2d / (n * (n-1))// (nC2)^-1
 
     print("Grad for subvolume: " + indexer.minIdx + " - " + indexer.maxIdx)
     val t = System.currentTimeMillis()
 
     var loss = 0d
-    val gradients = new ArrayBuffer[(MyTreePoint, DoubleTuple)]()
+    //val gradients = new ArrayBuffer[(MyTreePoint, DoubleTuple)]()
+
+    val gradients = Array.fill(indexer.size)(DoubleTuple.Zero)
 
     def innerFunc(edge:Edge, descendants:Int => Seq[Int], ancFrom:Int, ancTo:Int) = {
       //println("Adding wedge with weight " + edge.weight)
@@ -136,14 +138,20 @@ object MalisLoss extends MyLoss {
       val del = (nPos - aff*(nNeg + nPos)) * scaleFactor
       loss += (nPos * (1-aff)*(1-aff) + nNeg * aff*aff) * scaleFactor
 
-      gradients.append(edge.point -> DoubleTuple.oneHot(edge.dir, del))
+      //gradients.append(edge.point -> DoubleTuple.oneHot(edge.dir, del))
+      val innerIdx = indexer.outerToInner(edge.point.inner_idx)
+      gradients(innerIdx) = gradients(innerIdx) + DoubleTuple.oneHot(edge.dir, del)
     }
 
     kruskals(pointsAndPreds, indexer, innerFunc = innerFunc)
 
-    val grad = gradients.groupBy(_._1).map{ case (p, s) =>
-      p -> s.map(_._2).reduce(_+_)
-    }
+//    val grad = gradients.groupBy(_._1).map{ case (p, s) =>
+//      p -> s.map(_._2).reduce(_+_)
+//    }
+
+    val grad = Array.tabulate(indexer.size)(i =>
+      (pointsAndPreds(indexer.innerToOuter(i))._1, gradients(i))
+    )
 
     println(" (took " + (System.currentTimeMillis() - t) + "ms)")
     (grad, loss)
