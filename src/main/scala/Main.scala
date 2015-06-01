@@ -44,10 +44,12 @@ object Main {
     val save_to = s.save_to + "/" + timestr
 
 //    //-------------------------- Train -------------------------------------
-    val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets)
-    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = true)
+    val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets.length)
+    val (train, dimensions_train) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.train, s.nBaseFeatures,
+      s.data_root, s.maxBins, offsets, s.offsetMultiplier, 1, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
-    val strategy = new MyStrategy(Regression, s.impurity, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](), maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
+    val strategy = new MyStrategy(Regression, MyVariance, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](),
+      maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
 
     val model: MyEnsembleModelNew[_] = if (s.iterations == 0) {
       s.initialModel match {
@@ -114,7 +116,8 @@ object Main {
       println("Saved")
     }
     //-------------------------- Test ---------------------------------------
-    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.test, s.nBaseFeatures, s.data_root, s.maxBins, offsets, 1, bins, fromFront = false)
+    val (test, dimensions_test) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.test, s.nBaseFeatures, s.data_root,
+      s.maxBins, offsets, s.offsetMultiplier, 1, bins, fromFront = false)
 
 //    val allPartialModels:Seq[MyEnsembleModelNew[_]] = model.getPartialModels
 
@@ -243,8 +246,8 @@ object Main {
   case class Subvolumes(train: Seq[String], test:Seq[String])
   case class RunSettings(numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
                          subvolumes:Subvolumes, featureSubsetStrategy:String,
-                         impurity:MyImpurity, maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel, treesPerIteration:Int,
-                         dimOffsets:Seq[Int], master:String, save_model_to:String,
+                         /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel, treesPerIteration:Int,
+                         dimOffsets:Seq[Int], offsetMultiplier:Array[Int], master:String, save_model_to:String,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
                          useNodeIdCache:Boolean, malisSettings:MalisSettings) {
     def toVerboseString =
@@ -258,14 +261,15 @@ object Main {
       " train_subvolumes = "    + subvolumes.train.toList + "\n" +
       " test_subvolumes = "    + subvolumes.test.toList + "\n" +
       " featureSubsetStrategy = "    + featureSubsetStrategy + "\n" +
-      " impurity = "    + impurity + "\n" +
+      //" impurity = "    + impurity + "\n" +
       " maxDepth = "    + maxDepth + "\n" +
       " maxBins = "    + maxBins + "\n" +
       " nBaseFeatures = "    + nBaseFeatures + "\n" +
       " initialModel = "    + initialModel + "\n" +
       " treesPerIteration = "    + treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
-      " master = "    + master + "\n" +
+      " dimOffsets = "    + offsetMultiplier.toList + "\n" +
+    " master = "    + master + "\n" +
       " learningRate = "    + malisSettings.learningRate + "\n" +
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
@@ -305,7 +309,7 @@ object Main {
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = Subvolumes(train_subvolumes, test_subvolumes),
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
-      impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
+      //impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
       maxDepth      = m.getOrElse("maxDepth",      "15").toInt,
       maxBins       = m.getOrElse("maxBins",       "100").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
@@ -314,6 +318,7 @@ object Main {
                       else InitialTrainModel(m.getOrElse("initialTrees",  "10").toInt),
       treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
+      offsetMultiplier    = m.getOrElse("offsetMultiplier",    "1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       iterations    = m.getOrElse("iterations", "0").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,

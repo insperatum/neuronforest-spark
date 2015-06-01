@@ -50,15 +50,16 @@ object NeuronUtils {
     (newRDD, _ => unpersist())
   }
 
-  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, offsets:Seq[(Int, Int)]) = {
+  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, numOffsets:Int) = {
     println("getting splits and bins")
     val features_file_1 = data_root + "/" + subvolumes(0) + "/features.raw"
     val features_data_1 = new RawFeatureData(subvolumes(0), features_file_1, nBaseFeatures)
-    getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, offsets.length)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
+    getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, numOffsets)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
   }
 
   def loadData(sc: SparkContext, numExecutors:Int, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
-               maxBins:Int, offsets:Seq[(Int, Int)], proportion: Double, bins:Array[Array[Bin]], fromFront: Boolean) = {
+               maxBins:Int, offsets:Seq[(Int, Int)], offsetMultiplier:Array[Int], proportion: Double,
+               bins:Array[Array[Bin]], fromFront: Boolean) = {
     val chunked = subvolumes.grouped((subvolumes.size + numExecutors - 1) / numExecutors).toSeq
 
     val rawFeaturesData = sc.parallelize(chunked, chunked.size).mapPartitions{
@@ -77,7 +78,7 @@ object NeuronUtils {
 
         val indexer = new Indexer2D(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
 
-        val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets)
+        val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets, offsetMultiplier)
         targets.zipWithIndex.map { case (ts, idx) =>
           val y = ts(0)
           //val seg = ts(2).toInt
