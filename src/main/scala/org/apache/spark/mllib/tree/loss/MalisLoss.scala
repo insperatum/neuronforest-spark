@@ -21,9 +21,9 @@ object MalisLoss extends MyLoss {
     val preds = model.predict(points.map(_.getFeatureVector))
 
     val (g, uncache) = NeuronUtils.cached(points.zip(preds).mapPartitionsWithIndex((_, partition) => {
-      val gradsAndLosses = partition.toSeq.groupBy(_._1.data.id).toList.zipWithIndex.map { case ((id, d), _) =>
+      val gradsAndLosses = partition.toArray.groupBy(_._1.data.id).toArray.zipWithIndex.map { case ((id, d), _) =>
         println("Gradient for " + id + "...")
-        gradAndLoss(d.toArray, subsample_proportion, if (save_to == null) null else save_to + "/" + id)
+        gradAndLoss(d, subsample_proportion, if (save_to == null) null else save_to + "/" + id)
       }
       val grad = gradsAndLosses.flatMap(_._1)
       val losses = gradsAndLosses.map(_._2)
@@ -49,26 +49,26 @@ object MalisLoss extends MyLoss {
   def gradAndLoss(pointsAndPreds: Array[(MyTreePoint, DoubleTuple)], subsample_proportion:Double = 1, save_to:String) = {
     val dimensions = pointsAndPreds(0)._1.data.dimensions
 
-//    val numSamples = (dimensions._1 * dimensions._2 * subsample_proportion / (subvolume_size * subvolume_size)).toInt + 1
-//    val submaps = for(i <- 0 until numSamples) yield {
-//      val minIdx = (Random.nextInt(dimensions._1 - subvolume_size), Random.nextInt(dimensions._1 - subvolume_size))
-//      val maxIdx = (minIdx._1 + subvolume_size - 1, minIdx._2 + subvolume_size - 1)
-//      val indexer = new Indexer2D(dimensions, minIdx, maxIdx)
-//      gradAndLossForSubvolume(pointsAndPreds, indexer)
-//    }
-
-    val numSamples = (dimensions._1/subvolume_size) * (dimensions._2/subvolume_size)
-    val submaps = for(x <- 0 until dimensions._1/subvolume_size;
-                      y <- 0 until dimensions._2/subvolume_size
-                      if math.random < subsample_proportion
-    ) yield {
-        val minIdx = (x * subvolume_size, y * subvolume_size)
-        val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
-        val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
-        val maxIdx = (max_x, max_y)
-        val indexer = new Indexer(dimensions, minIdx, maxIdx)
-        gradAndLossForSubvolume(pointsAndPreds, indexer)
+    val numSamples = (dimensions._1 * dimensions._2 * subsample_proportion / (subvolume_size * subvolume_size)).toInt + 1
+    val submaps = for(i <- 0 until numSamples) yield {
+      val minIdx = (Random.nextInt(dimensions._1 - subvolume_size), Random.nextInt(dimensions._1 - subvolume_size))
+      val maxIdx = (minIdx._1 + subvolume_size - 1, minIdx._2 + subvolume_size - 1)
+      val indexer = new Indexer(dimensions, minIdx, maxIdx)
+      gradAndLossForSubvolume(pointsAndPreds, indexer)
     }
+
+//    val numSamples = (dimensions._1/subvolume_size) * (dimensions._2/subvolume_size)
+//    val submaps = for(x <- 0 until dimensions._1/subvolume_size;
+//                      y <- 0 until dimensions._2/subvolume_size
+//                      if math.random < subsample_proportion
+//    ) yield {
+//        val minIdx = (x * subvolume_size, y * subvolume_size)
+//        val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
+//        val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
+//        val maxIdx = (max_x, max_y)
+//        val indexer = new Indexer(dimensions, minIdx, maxIdx)
+//        gradAndLossForSubvolume(pointsAndPreds, indexer)
+//    }
 
     val (grads, lossSum) = submaps.reduce((x, y) => (x._1 ++ y._1, x._2 + y._2))
     val loss = lossSum / numSamples

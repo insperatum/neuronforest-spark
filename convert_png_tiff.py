@@ -26,9 +26,9 @@ def convert(imagesDir):
 		predictions.write_image(image)
 
 folders = [
-	"/isbi_predictions/2015-06-01 09-23-35/predictions/partial6/depth15/test"
+	"/isbi_predictions/2015-06-02 11-20-12/predictions/partial100/test"
 	]
-	
+
 for f in folders:
 	print(f)
 	convert(f)

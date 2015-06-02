@@ -1,5 +1,8 @@
+#Launch
+spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 start BIG36
+
 #MASTER
-	MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master BIG36 | tail -1`
+MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master BIG36 | tail -1`
 
 #download all data onto workers
 (ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | while read line; do
@@ -39,13 +42,29 @@ export SUBVOLUMES_TRAIN_FULL=r1f0s0,r1f0s1,r1f0s10,r1f0s11,r1f0s12,r1f0s13,r1f0s
 export SUBVOLUMES_TEST=r0f0s0,r0f0s1,r0f0s10,r0f0s11,r0f0s12,r0f0s13,r0f0s14,r0f0s15,r0f0s16,r0f0s17,r0f0s18,r0f0s19,r0f0s2,r0f0s20,r0f0s21,r0f0s22,r0f0s23,r0f0s24,r0f0s25,r0f0s26,r0f0s27,r0f0s28,r0f0s29,r0f0s3,r0f0s4,r0f0s5,r0f0s6,r0f0s7,r0f0s8,r0f0s9
 
 #init
-if [ -z "$4" ]; then echo "Please give 4 arguments!"; exit 1; fi
+if [ -z "$6" ]; then echo "Please give 6 arguments:"; echo "subvolumes_train, dimOffsets, initialTrees, maxDepth, maxBins, featureSubsetStrategy"; exit 1; fi
 source ~/isbi/subvolumes.sh
 ~/isbi/clear.sh;
 dt=$(date '+%Y%m%d_%H%M%S');
-~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 subvolumes_test=$SUBVOLUMES_TEST dimOffsets=$2 learningRate=1 initialTrees=$3 save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 iterations=0 maxDepth=$4 testPartialModels=1 testDepths=$4 useNodeIdCache=false subsampleProportion=1 momentum=0 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 subvolumes_test=$SUBVOLUMES_TEST dimOffsets=$2 learningRate=1 initialTrees=$3 save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 iterations=0 maxDepth=$4 testPartialModels=1 testDepths=$4 maxBins=$5 useNodeIdCache=false subsampleProportion=1 momentum=0 offsetMultiplier=1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8 featureSubsetStrategy=$6 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
 ~/isbi/save.sh
 
+#malis
+if [ -z "$9" ]; then echo "Please give 9 arguments:"; echo "subvolumes_train, loadModel, dimOffsets, maxBins, iterations, learningRate, maxDepth, subsampleProportion, featureSubsetStrategy"; exit 1; fi
+source ~/isbi/subvolumes.sh
+~/isbi/clear.sh;
+dt=$(date '+%Y%m%d_%H%M%S');
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 loadModel=$2 dimOffsets=$3 maxBins=$4 iterations=$5 learningRate=$6 maxDepth=$7 subsampleProportion=$8 subvolumes_test=$SUBVOLUMES_TEST save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 testPartialModels= testDepths= useNodeIdCache=false momentum=0 offsetMultiplier=1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8 featureSubsetStrategy=$9 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/isbi/save.sh
+
+
+#test
+if [ -z "$6" ]; then echo "Please give 6 arguments:"; echo "subvolumes_train, loadModel, dimOffsets, maxBins, featureSubsetStrategy, testPartialModels"; exit 1; fi
+source ~/isbi/subvolumes.sh
+~/isbi/clear.sh;
+dt=$(date '+%Y%m%d_%H%M%S');
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 loadModel=$2 dimOffsets=$3 maxBins=$4 featureSubsetStrategy=$5 testPartialModels=$6 iterations=0 learningRate=0 maxDepth=999 subsampleProportion=0 subvolumes_test=$SUBVOLUMES_TEST save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 testDepths= useNodeIdCache=false momentum=0 offsetMultiplier=1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/isbi/save.sh
 
 #save
 (cat ~/spark-ec2/slaves) | (tasks=""; while read line; do

@@ -128,17 +128,17 @@ object Main {
 
     //val testPartialModels = (s.testPartialModels :+ allPartialModels.size).distinct //ensure that the final model is tested
     val testPartialModels = if(s.testPartialModels.isEmpty) Seq(model.nElems) else s.testPartialModels
-    val testDepths = if(s.testDepths.isEmpty) Seq(s.maxDepth) else s.testDepths
+    val testDepths = if(s.testDepths.isEmpty) Seq(Integer.MAX_VALUE) else s.testDepths
 
     val partialSegments:Seq[MyEnsembleModelNew[_]] = model.getPartialSegments(testPartialModels)
 
-    var j = 0
-    while (j < testDepths.size) { // WHYYYY???
-      val depth = testDepths(j)
-      println("Depth " + depth)
-      j += 1
+    //var j = 0
+    //while (j < testDepths.size) { // WHYYYY???
+      //val depth = testDepths(j)
+      //println("Depth " + depth)
+      //j += 1
 
-
+/*
       def capDepth(m: Any):Unit = {
         model.elems.head match {
           case _: MyDecisionTreeModel =>
@@ -148,7 +148,9 @@ object Main {
             partialSegments.foreach(_.elems.foreach(x => capDepth(x)))
           //          allPartialModels.foreach(_.elems.foreach(_.asInstanceOf[MyRandomForestModelNew].trees.foreach(_.capDepth(depth))))
         }
-      }
+      }*/
+
+
 //      model.elems.head match {
 //        case _: MyDecisionTreeModel =>
 //          partialSegments.foreach(_.elems.foreach(_.asInstanceOf[MyDecisionTreeModel].capDepth(depth)))
@@ -169,7 +171,7 @@ object Main {
         i+=1
         nElems = nElems + partialSegment.nElems
 
-        println("\nTesting partial model with " + nElems + " elements, at depth " + depth)
+        println("\nTesting partial model with " + nElems + " elements"/*, at depth " + depth*/)
 
         // Training Error
         val trainLabelsAndPredictions = (train_cached zip currentPredictionsTrain).map {case (point, currentPrediction) =>
@@ -184,7 +186,7 @@ object Main {
         if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
-            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/train/" + id,
+            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + /*"/depth" + depth +*/ "/train/" + id,
               d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_train(i)(j), s.toVerboseString, training_time
               /*,indexesAndGrads*/)
           }.toIterator
@@ -213,7 +215,7 @@ object Main {
         if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
-            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + "/depth" + depth + "/test/" + id,
+            NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + /*"/depth" + depth +*/ "/test/" + id,
               d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_test(i)(j), s.toVerboseString, training_time
               /*,indexesAndGrads*/)
           }.toIterator
@@ -231,7 +233,7 @@ object Main {
         println("Saved Test Predictions")
         testLabelsAndPredictions.unpersist()
       }
-    }
+    //}
 
 
     println("Job complete. Saved to: " + s.save_to + "/" + timestr)
@@ -268,13 +270,13 @@ object Main {
       " initialModel = "    + initialModel + "\n" +
       " treesPerIteration = "    + treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
-      " dimOffsets = "    + offsetMultiplier.toList + "\n" +
+      " offsetMultiplier = "    + offsetMultiplier.toList + "\n" +
     " master = "    + master + "\n" +
       " learningRate = "    + malisSettings.learningRate + "\n" +
       " iterations = "   + iterations + "\n" +
       " saveGradients = " + saveGradients + "\n" +
       " testPartialModels = " + testPartialModels + "\n" +
-      " testDepths = " + testDepths + "\n" +
+      " testDepths = (IGNORED!) " + testDepths + "\n" +
       " useNodeIdCache = " + useNodeIdCache + "\n" +
       " subsampleProportion = " + malisSettings.subsampleProportion + "\n" +
       " momentum = " + malisSettings.momentum
