@@ -41,7 +41,7 @@ object Main {
     val sc = new SparkContext(conf)
 
     val timestr = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
-    val save_to = s.save_to + "/" + timestr
+    val save_to = s.save_to + "/" + s.name + "-" + timestr
 
 //    //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets.length)
@@ -65,7 +65,7 @@ object Main {
       println("Training a Gradient boosted model")
       //    Gradient Boosting
       val boostingStrategy = new MyBoostingStrategy(strategy, MalisLoss, s.initialModel, s.iterations,
-        s.treesPerIteration, s.malisSettings.learningRate, s.malisSettings.momentum)
+        s.malisSettings.treesPerIteration, s.malisSettings.learningRate, s.malisSettings.momentum)
       //    val (model, grads, seg) = new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
       //      dimensions_train.map(_.n_targets).sum, splits, bins, s.featureSubsetStrategy)
       new MyGradientBoostedTrees(boostingStrategy).run(train, boostingStrategy, nFeatures,
@@ -100,7 +100,7 @@ object Main {
 
     //-------------------------- Save Model ---------------------------------
     if(s.save_model_to != "") {
-      val model_dir = s.save_model_to + "/" + timestr
+      val model_dir = s.save_model_to + "/" + s.name + "-" + timestr
       println("\nSaving model to " + model_dir)
       new io.File(model_dir).mkdirs()
 
@@ -127,7 +127,9 @@ object Main {
     val (test_cached, _) = NeuronUtils.cached(test)
 
     //val testPartialModels = (s.testPartialModels :+ allPartialModels.size).distinct //ensure that the final model is tested
-    val testPartialModels = if(s.testPartialModels.isEmpty) Seq(model.nElems) else s.testPartialModels
+    val testPartialModels = if(s.testPartialModels.isEmpty) Seq(model.nElems)
+                            else if(s.testPartialModels.head == -1) Seq()
+                            else s.testPartialModels
     val testDepths = if(s.testDepths.isEmpty) Seq(Integer.MAX_VALUE) else s.testDepths
 
     val partialSegments:Seq[MyEnsembleModelNew[_]] = model.getPartialSegments(testPartialModels)
@@ -244,16 +246,17 @@ object Main {
 
   // -----------------------------------------------------------------------
 
-  case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double)
+  case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double, treesPerIteration:Int)
   case class Subvolumes(train: Seq[String], test:Seq[String])
-  case class RunSettings(numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
+  case class RunSettings(name:String, numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
                          subvolumes:Subvolumes, featureSubsetStrategy:String,
-                         /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel, treesPerIteration:Int,
+                         /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel,
                          dimOffsets:Seq[Int], offsetMultiplier:Array[Int], master:String, save_model_to:String,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
                          useNodeIdCache:Boolean, malisSettings:MalisSettings) {
     def toVerboseString =
       "RunSettings:\n" +
+        " name = " + name + "\n" +
         " numExecutors = " + numExecutors + "\n" +
     " maxMemoryInMB = " + maxMemoryInMB + "\n" +
       " localDir = " + localDir + "\n" +
@@ -268,7 +271,7 @@ object Main {
       " maxBins = "    + maxBins + "\n" +
       " nBaseFeatures = "    + nBaseFeatures + "\n" +
       " initialModel = "    + initialModel + "\n" +
-      " treesPerIteration = "    + treesPerIteration + "\n" +
+      " treesPerIteration = "    + malisSettings.treesPerIteration + "\n" +
       " dimOffsets = "    + dimOffsets.toList + "\n" +
       " offsetMultiplier = "    + offsetMultiplier.toList + "\n" +
     " master = "    + master + "\n" +
@@ -302,6 +305,7 @@ object Main {
     }
 
     RunSettings(
+      name  = m.getOrElse("name", "expt"),
       numExecutors  = m.getOrElse("numExecutors", "1").toInt,
       maxMemoryInMB = m.getOrElse("maxMemoryInMB", "500").toInt,
       data_root     = m.getOrElse("data_root",     "/isbi_data"),
@@ -318,16 +322,20 @@ object Main {
       initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
                       if(m.contains("loadModel")) InitialLoadedModel(m("loadModel"))
                       else InitialTrainModel(m.getOrElse("initialTrees",  "10").toInt),
-      treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
       dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       offsetMultiplier    = m.getOrElse("offsetMultiplier",    "1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8").split(",").map(_.toInt),
       master        = m.getOrElse("master",        "local"), // use empty string to not setdata_
       iterations    = m.getOrElse("iterations", "2").toInt,
       saveGradients = m.getOrElse("saveGradients", "false").toBoolean,
-      testPartialModels = m.getOrElse("testPartialModels", "").split(",").filter(! _.isEmpty).map(_.toInt),
+      testPartialModels = {
+        val in = m.getOrElse("testPartialModels", "")
+        if (in=="none") Seq(-1)
+        else in.split(",").filter(! _.isEmpty).map(_.toInt)
+      },
       testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
       malisSettings = MalisSettings(
+        treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
         learningRate     = m.getOrElse("learningRate",     "1").toDouble,
         subsampleProportion = m.getOrElse("subsampleProportion", "1").toDouble,
         momentum = m.getOrElse("momentum", "0").toDouble
