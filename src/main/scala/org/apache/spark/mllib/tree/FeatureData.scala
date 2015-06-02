@@ -50,7 +50,7 @@ class RawFeatureData(val id:String, file:String, val nFeatures:Int) extends Feat
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
                         val indexer: Indexer,
-                        offsets:Seq[(Int, Int)],
+                        offsets:Seq[(Int, Int, Int)],
                         offsetMultiplier:Array[Int]) extends Serializable {
 
 
@@ -64,7 +64,7 @@ class BinnedFeatureData(featureData:RawFeatureData,
   val nFeatures = nBaseFeatures * offsets.length
   val nExamples = featureData.nExamples
   val featureOffsets = offsets.flatMap(o => {
-    val idxOffset = o._1 * outerSteps._1 + o._2 * outerSteps._2
+    val idxOffset = o._1 * outerSteps._1 + o._2 * outerSteps._2 + o._3 * outerSteps._3
     //Array.fill(nBaseFeatures){idxOffset}
     offsetMultiplier.map(_ * idxOffset)
   })

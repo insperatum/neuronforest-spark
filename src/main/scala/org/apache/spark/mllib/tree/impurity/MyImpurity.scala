@@ -49,8 +49,8 @@ trait MyImpurity extends Serializable {
    * @return information value, or 0 if count = 0
    */
   @DeveloperApi
-  def calculate(count: Double, sum1: Double, sum2: Double,
-                sumSquares1: Double, sumSquares2: Double): Double
+  def calculate(count: Double, sum1: Double, sum2: Double, sum3:Double,
+                sumSquares1: Double, sumSquares2: Double, sumSquares3: Double): Double
 }
 
 /**

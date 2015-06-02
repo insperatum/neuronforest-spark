@@ -34,7 +34,7 @@ object Main {
     val s = getSettingsFromArgs(args)
     println("Settings:\n" + s.toVerboseString)
 
-    val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets) yield (x, y)
+    val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets; z <- s.dimOffsets) yield (x, y, z)
     val nFeatures = s.nBaseFeatures * offsets.length
     val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.local.dir", s.localDir)
     if (!s.master.isEmpty) conf.setMaster(s.master)

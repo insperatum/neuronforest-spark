@@ -51,21 +51,23 @@ object MalisLoss extends MyLoss {
 
     val numSamples = (dimensions._1 * dimensions._2 * subsample_proportion / (subvolume_size * subvolume_size)).toInt + 1
     val submaps = for(i <- 0 until numSamples) yield {
-      val minIdx = (Random.nextInt(dimensions._1 - subvolume_size), Random.nextInt(dimensions._1 - subvolume_size))
-      val maxIdx = (minIdx._1 + subvolume_size - 1, minIdx._2 + subvolume_size - 1)
+      val minIdx = (Random.nextInt(dimensions._1 - subvolume_size), Random.nextInt(dimensions._2 - subvolume_size), Random.nextInt(dimensions._3 - subvolume_size))
+      val maxIdx = (minIdx._1 + subvolume_size - 1, minIdx._2 + subvolume_size - 1, minIdx._3 + subvolume_size - 1)
       val indexer = new Indexer(dimensions, minIdx, maxIdx)
       gradAndLossForSubvolume(pointsAndPreds, indexer)
     }
 
 //    val numSamples = (dimensions._1/subvolume_size) * (dimensions._2/subvolume_size)
 //    val submaps = for(x <- 0 until dimensions._1/subvolume_size;
-//                      y <- 0 until dimensions._2/subvolume_size
+//                      y <- 0 until dimensions._2/subvolume_size;
+//                      z <- 0 until dimensions._2/subvolume_size;
 //                      if math.random < subsample_proportion
 //    ) yield {
-//        val minIdx = (x * subvolume_size, y * subvolume_size)
+//        val minIdx = (x * subvolume_size, y * subvolume_size, z * subvolume_size)
 //        val max_x = math.min((x+1) * subvolume_size - 1, dimensions._1 - 1)
 //        val max_y = math.min((y+1) * subvolume_size - 1, dimensions._2 - 1)
-//        val maxIdx = (max_x, max_y)
+//        val max_z = math.min((z+1) * subvolume_size - 1, dimensions._3 - 1)
+//        val maxIdx = (max_x, max_y, max_z)
 //        val indexer = new Indexer(dimensions, minIdx, maxIdx)
 //        gradAndLossForSubvolume(pointsAndPreds, indexer)
 //    }
@@ -83,7 +85,7 @@ object MalisLoss extends MyLoss {
 
       val grad_save = Array.fill[Double](pointsAndPreds.length)(0)
       grads.foreach(g => grad_save(g._1.inner_idx)=g._2.avg)
-      NeuronUtils.save2D(save_to, "grads", grad_save, dimensions)
+      NeuronUtils.save3D(save_to, "grads", grad_save, dimensions)
       NeuronUtils.saveText(save_to, "loss", loss.toString)
     }
 

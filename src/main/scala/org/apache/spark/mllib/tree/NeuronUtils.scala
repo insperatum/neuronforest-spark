@@ -58,7 +58,7 @@ object NeuronUtils {
   }
 
   def loadData(sc: SparkContext, numExecutors:Int, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
-               maxBins:Int, offsets:Seq[(Int, Int)], offsetMultiplier:Array[Int], proportion: Double,
+               maxBins:Int, offsets:Seq[(Int, Int, Int)], offsetMultiplier:Array[Int], proportion: Double,
                bins:Array[Array[Bin]], fromFront: Boolean) = {
     val chunked = subvolumes.grouped((subvolumes.size + numExecutors - 1) / numExecutors).toSeq
 
@@ -109,7 +109,7 @@ object NeuronUtils {
     (data, dimensions)
   }*/
 
-  case class Dimensions(outerDimensions:(Int, Int), min_idx:(Int, Int), max_idx:(Int, Int), n_targets:Int, target_index_offset:Int)
+  case class Dimensions(outerDimensions:(Int, Int, Int), min_idx:(Int, Int, Int), max_idx:(Int, Int, Int), n_targets:Int, target_index_offset:Int)
   private def getDimensions(sc:SparkContext, data_root:String, subvolumes_chunked:Seq[Seq[String]], proportion:Double, fromFront:Boolean) = {
     val numExecutors = sc.getExecutorStorageStatus.length
 
@@ -117,20 +117,20 @@ object NeuronUtils {
       val dimensions_file = data_root + "/" + subvolume + "/dimensions.txt"
       val dimensions = Source.fromFile(dimensions_file).getLines().map(_.split(" ").map(_.toInt)).toArray
 
-      val outerDimensions = (dimensions(0)(0), dimensions(0)(1))
+      val outerDimensions = (dimensions(0)(0), dimensions(0)(1), dimensions(0)(2))
       //val size = dimensions(0)
       //val step = (size(1) * size(2), size(2), 1)
-      val min_idx_all = (dimensions(1)(0), dimensions(1)(1))
-      val max_idx_all = (dimensions(2)(0), dimensions(2)(1))
+      val min_idx_all = (dimensions(1)(0), dimensions(1)(1), dimensions(1)(2))
+      val max_idx_all = (dimensions(2)(0), dimensions(2)(1), dimensions(2)(2))
 
       val min_idx = if(fromFront) min_idx_all
-      else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2)
+      else (max_idx_all._1 - ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, min_idx_all._2, min_idx_all._3)
 
       val max_idx = if(!fromFront) max_idx_all
-      else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2)
+      else (min_idx_all._1 + ((max_idx_all._1 - min_idx_all._1)*proportion).toInt, max_idx_all._2, max_idx_all._3)
 
-      val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1)
-      val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1)
+      val n_targets = (max_idx._1 - min_idx._1 + 1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
+      val target_index_offset = (min_idx._1 - min_idx_all._1) * (max_idx._2 - min_idx._2 + 1) * (max_idx._3 - min_idx._3 + 1)
 
       Dimensions(outerDimensions, min_idx, max_idx, n_targets, target_index_offset)
     }}.toIterator)
@@ -224,6 +224,27 @@ object NeuronUtils {
     ImageIO.write(img, "png", new File(path + "/" + filename + ".png"))
   }
 
+  def save3D(path:String, filename:String, that:Array[Double], dims:(Int, Int, Int)): Unit = {
+    println("Saving 3D: " + path + "/" + filename)
+    val dir =  new io.File(path)
+    if(!dir.exists) dir.mkdirs()
+
+    val fwdims = new FileWriter(path + "/dims.txt", false)
+    fwdims.write(dims._1 + " " + dims._2 + " " + dims._3)
+    fwdims.close()
+
+    val fc = new RandomAccessFile(path + "/" + filename, "rw").getChannel
+    val byteBuffer = ByteBuffer.allocate(4 * 1) //must be multiple of 4 for floats
+    val floatBuffer =  byteBuffer.asFloatBuffer()
+    that.foreach { d =>
+      floatBuffer.put(d.toFloat)
+      fc.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+    }
+    fc.close()
+  }
+
   def grayToRGB(x:Int) = {
     val y = Math.min(255, Math.max(x, 0))
     new Color(y, y, y).getRGB
@@ -242,31 +263,26 @@ object NeuronUtils {
 
     val fwdimensions = new FileWriter(path + "/dimensions.txt", false)
     import dimensions.{min_idx, max_idx}
-    val dims = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1)
-    fwdimensions.write(dims._1 + " " + dims._2)
+    val dims = (max_idx._1 - min_idx._1 + 1, max_idx._2 - min_idx._2 + 1, max_idx._3 - min_idx._3 + 1)
+    fwdimensions.write(dims._1 + " " + dims._2 + " " + dims._3)
     fwdimensions.close()
 
-
-    val labelsAndPredictionsSeq = labelsAndPredictions.toList
-
-    val pred_vals = labelsAndPredictionsSeq.map(x => grayToRGB( (x._2.avg * 255).toInt) ).toArray
-    val pred_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
-    pred_img.setRGB(0, 0, dims._2, dims._1, pred_vals, 0, dims._2)
-    ImageIO.write(pred_img, "png", new File(path + "/predictions.png"))
-
-    val label_vals = labelsAndPredictionsSeq.map(x => grayToRGB((x._1.avg * 255).toInt)).toArray
-    val lab_img = new BufferedImage(dims._2, dims._1, BufferedImage.TYPE_BYTE_GRAY)
-    lab_img.setRGB(0, 0, dims._2, dims._1, label_vals, 0, dims._2)
-    ImageIO.write(lab_img, "png", new File(path + "/labels.png"))
-
-    /*val fwlabels = new FileWriter(path + "/labels.txt", false)
-    val fwpredictions = new FileWriter(path + "/predictions.txt", false)
-    labelsAndPredictions.foreach{ case (label, prediction) => {
-      fwlabels.write(label._1 + " " + label._2 + " " + label._3 + "\n")
-      fwpredictions.write(prediction._1 + " " + prediction._2 + " " + prediction._3 + "\n")
-    }}
-    fwlabels.close()
-    fwpredictions.close()*/
+    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
+    val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
+    val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
+    val floatBuffer =  byteBuffer.asFloatBuffer()
+    labelsAndPredictions.foreach{ case (label, prediction, _) =>
+      Seq(label._1, label._2, label._3).foreach(d => floatBuffer.put(d.toFloat))
+      fclabels.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+      Seq(prediction._1, prediction._2, prediction._3).foreach(d => floatBuffer.put(d.toFloat))
+      fcpredictions.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+    }
+    fclabels.close()
+    fcpredictions.close()
 
 
     println("\tComplete")
