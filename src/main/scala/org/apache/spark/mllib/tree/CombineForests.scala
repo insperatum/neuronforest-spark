@@ -46,7 +46,7 @@ object CombineForests {
 //      "2015-04-18 07-32-14",
 //      "2015-04-18 07-51-20").map("/masters_models/" + _)
 
-    val save_to = args(0) + "/" + new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
+    val save_to = args(0) + "/combined-" + new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date())
     val model_files = args.drop(1)
 
 
