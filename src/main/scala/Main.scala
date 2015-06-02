@@ -182,14 +182,14 @@ object Main {
           val prediction = if(partialSegment.isSum) currentPrediction + segmentPrediction
                            else if(nElems == partialSegment.nElems) segmentPrediction
                            else (currentPrediction * (nElems - partialSegment.nElems) + segmentPrediction * partialSegment.nElems) / nElems
-          (point.label, prediction, point.data.id, point.inner_idx)
+          (point.label, prediction, point.data.id)
         }.cache()
 
         if (trainLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
             NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + /*"/depth" + depth +*/ "/train/" + id,
-              d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_train(i)(j), s.toVerboseString, training_time
+              d.toIterator.map(x => (x._1, x._2)), dimensions_train(i)(j), s.toVerboseString, training_time
               /*,indexesAndGrads*/)
           }.toIterator
         }).count() != s.subvolumes.train.length) {
@@ -212,13 +212,13 @@ object Main {
           val prediction = if(partialSegment.isSum) currentPrediction + segmentPrediction
           else if(nElems == partialSegment.nElems) segmentPrediction
           else (currentPrediction * (nElems - partialSegment.nElems) + segmentPrediction * partialSegment.nElems) / nElems
-          (point.label, prediction, point.data.id, point.inner_idx)
+          (point.label, prediction, point.data.id)
         }.cache()
         if (testLabelsAndPredictions.mapPartitionsWithIndex((i, p) => {
           println("save:")
           p.toSeq.groupBy(_._3).zipWithIndex.map{ case((id, d), j) =>
             NeuronUtils.saveLabelsAndPredictions(save_to + "/predictions/partial" + nElems + /*"/depth" + depth +*/ "/test/" + id,
-              d.toIterator.map(x => (x._1, x._2, x._4)), dimensions_test(i)(j), s.toVerboseString, training_time
+              d.toIterator.map(x => (x._1, x._2)), dimensions_test(i)(j), s.toVerboseString, training_time
               /*,indexesAndGrads*/)
           }.toIterator
         }).count() != s.subvolumes.test.length) {
@@ -238,7 +238,7 @@ object Main {
     //}
 
 
-    println("Job complete. Saved to: " + s.save_to + "/" + timestr)
+    println("Job complete. Saved to: " + save_to)
     println("Job took: " + ((System.currentTimeMillis() - start_time)/60000) + " minutes")
 
   }

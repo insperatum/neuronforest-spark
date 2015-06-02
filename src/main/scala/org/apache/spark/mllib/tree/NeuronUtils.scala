@@ -250,7 +250,7 @@ object NeuronUtils {
     new Color(y, y, y).getRGB
   }
 
-  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(DoubleTuple, DoubleTuple, Int /*inner_idx*/)], dimensions:Dimensions,
+  def saveLabelsAndPredictions(path:String, labelsAndPredictions:Iterator[(DoubleTuple, DoubleTuple/*, Int*/ /*inner_idx*/)], dimensions:Dimensions,
                                description:String, training_time:Long): Unit = {
     println("Saving labels and predictions: " + path)
     val dir =  new io.File(path)
