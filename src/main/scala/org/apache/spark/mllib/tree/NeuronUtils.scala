@@ -271,7 +271,7 @@ object NeuronUtils {
     val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
     val byteBuffer = ByteBuffer.allocate(4 * 3) //must be multiple of 4 for floats
     val floatBuffer =  byteBuffer.asFloatBuffer()
-    labelsAndPredictions.foreach{ case (label, prediction, _) =>
+    labelsAndPredictions.foreach{ case (label, prediction) =>
       Seq(label._1, label._2, label._3).foreach(d => floatBuffer.put(d.toFloat))
       fclabels.write(byteBuffer)
       byteBuffer.rewind()
