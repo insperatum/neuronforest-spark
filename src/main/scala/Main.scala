@@ -36,7 +36,7 @@ object Main {
 
     val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets) yield (x, y)
     val nFeatures = s.nBaseFeatures * offsets.length
-    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.logConf", true)
+    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.logConf", "true")
     if (!s.master.isEmpty) conf.setMaster(s.master)
     val sc = new SparkContext(conf)
 
