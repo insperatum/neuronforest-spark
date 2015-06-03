@@ -250,10 +250,11 @@ object Main {
   case class Subvolumes(train: Seq[String], test:Seq[String])
   case class RunSettings(name:String, numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
                          subvolumes:Subvolumes, featureSubsetStrategy:String,
-                         /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel,
+                         /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, /*nBaseFeatures:Int,*/ initialModel:InitialModel,
                          dimOffsets:Seq[Int], offsetMultiplier:Array[Int], master:String, save_model_to:String,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
                          useNodeIdCache:Boolean, malisSettings:MalisSettings) {
+    val nBaseFeatures = offsetMultiplier.length
     def toVerboseString =
       "RunSettings:\n" +
         " name = " + name + "\n" +
@@ -318,7 +319,7 @@ object Main {
       //impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
       maxDepth      = m.getOrElse("maxDepth",      "10").toInt,
       maxBins       = m.getOrElse("maxBins",       "10").toInt,
-      nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
+      //nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
       initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
                       if(m.contains("loadModel")) InitialLoadedModel(m("loadModel"))
                       else InitialTrainModel(m.getOrElse("initialTrees",  "10").toInt),
