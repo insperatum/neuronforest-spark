@@ -36,7 +36,7 @@ object Main {
 
     val offsets = for (x <- s.dimOffsets; y <- s.dimOffsets) yield (x, y)
     val nFeatures = s.nBaseFeatures * offsets.length
-    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.local.dir", s.localDir)
+    val conf = new SparkConf().setAppName("Hello").set("spark.shuffle.spill", "false").set("spark.logConf", true)
     if (!s.master.isEmpty) conf.setMaster(s.master)
     val sc = new SparkContext(conf)
 
@@ -248,7 +248,7 @@ object Main {
 
   case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double, treesPerIteration:Int)
   case class Subvolumes(train: Seq[String], test:Seq[String])
-  case class RunSettings(name:String, numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, localDir: String,
+  case class RunSettings(name:String, numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, /*localDir: String,*/
                          subvolumes:Subvolumes, featureSubsetStrategy:String,
                          /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, /*nBaseFeatures:Int,*/ initialModel:InitialModel,
                          dimOffsets:Seq[Int], offsetMultiplier:Array[Int], master:String, save_model_to:String,
@@ -260,7 +260,7 @@ object Main {
         " name = " + name + "\n" +
         " numExecutors = " + numExecutors + "\n" +
     " maxMemoryInMB = " + maxMemoryInMB + "\n" +
-      " localDir = " + localDir + "\n" +
+      /*" localDir = " + localDir + "\n" +*/
       " data_root = "     + data_root + "\n" +
       " save_to = "       + save_to + "\n" +
       " save_model_to = " + save_model_to + "\n" +
@@ -312,7 +312,7 @@ object Main {
       data_root     = m.getOrElse("data_root",     "/isbi_data"),
       save_to       = m.getOrElse("save_to",       "/isbi_predictions_local"),
       save_model_to = m.getOrElse("save_model_to", ""),
-      localDir      = m.getOrElse("localDir",     "/tmp"),
+      //localDir      = m.getOrElse("localDir",     "/tmp"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = Subvolumes(train_subvolumes, test_subvolumes),
       featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
