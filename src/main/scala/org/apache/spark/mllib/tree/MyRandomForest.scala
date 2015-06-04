@@ -23,7 +23,7 @@ import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.mllib.regression.MyLabeledPoint
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
-import org.apache.spark.mllib.tree.configuration.MyStrategy
+import org.apache.spark.mllib.tree.configuration.{EnsembleCombiningStrategy, Algo, MyStrategy}
 import org.apache.spark.mllib.tree.impl._
 import org.apache.spark.mllib.tree.impurity.MyImpurities
 import org.apache.spark.mllib.tree.model._
@@ -292,6 +292,27 @@ object MyRandomForest extends Serializable with Logging {
     val rf = new MyRandomForest(strategy, numTrees, featureSubsetStrategy, seed)
     rf.run(input)
   }
+
+  def trainSerial(input: RDD[MyTreePoint],
+                  strategy: MyStrategy,
+                  numTrees: Int,
+                  featureSubsetStrategy: String,
+                  seed: Int,
+                  numFeatures: Int,
+                  numExamples: Long,
+                  splits: Array[Array[Split]],
+                  bins: Array[Array[Bin]]): MyRandomForestModelNew = {
+    val subforests = Array.tabulate(numTrees) { i =>
+      val t = System.currentTimeMillis()
+      println("\n\nTraining tree " + i + "\n----------------")
+      val subforest = MyRandomForest.trainRegressorFromTreePoints(input, strategy, 1, featureSubsetStrategy, seed,
+        numFeatures, numExamples, splits, bins)
+      println("Tree took " + ((System.currentTimeMillis() - t)/6000).toDouble/10 + " minutes")
+      subforest
+    }
+    new MyRandomForestModelNew(Algo.Regression, subforests.map(_.trees.head))
+  }
+
 
   def trainRegressorFromTreePoints(
                        input: RDD[MyTreePoint],
