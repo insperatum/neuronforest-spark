@@ -46,7 +46,7 @@ object Main {
 //    //-------------------------- Train -------------------------------------
     val (splits, bins) = NeuronUtils.getSplitsAndBins(s.subvolumes.train, s.nBaseFeatures, s.data_root, s.maxBins, offsets.length)
     val (train, dimensions_train) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.train, s.nBaseFeatures,
-      s.data_root, s.maxBins, offsets, s.offsetMultiplier, 0.5, bins, fromFront = true)
+      s.data_root, s.maxBins, offsets, s.offsetMultiplier, 1, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, MyVariance, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](),
       maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
@@ -117,7 +117,7 @@ object Main {
     }
     //-------------------------- Test ---------------------------------------
     val (test, dimensions_test) = NeuronUtils.loadData(sc, s.numExecutors, s.subvolumes.test, s.nBaseFeatures, s.data_root,
-      s.maxBins, offsets, s.offsetMultiplier, 0.5, bins, fromFront = false)
+      s.maxBins, offsets, s.offsetMultiplier, 1, bins, fromFront = false)
 
 //    val allPartialModels:Seq[MyEnsembleModelNew[_]] = model.getPartialModels
 
