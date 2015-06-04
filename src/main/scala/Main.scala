@@ -56,7 +56,7 @@ object Main {
         case m:InitialTrainModel =>
           println("Training a Random Forest Model (no gradient boosting)")
           //    Random Forest
-          MyRandomForest.trainRegressorFromTreePoints(train, strategy, m.initialTrees, s.featureSubsetStrategy: String, 1,
+          MyRandomForest.trainSerial(train, strategy, m.initialTrees, s.featureSubsetStrategy: String, 1,
             nFeatures, dimensions_train.map(_.map(_.n_targets).sum).sum, splits, bins)
         case m:InitialLoadedModel => m.load()
       }
