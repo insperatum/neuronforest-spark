@@ -49,7 +49,7 @@ object Main {
       s.data_root, s.maxBins, s.baseFeaturesAndOffsets, 1, bins, fromFront = true)
     //train.persist(StorageLevel.MEMORY_ONLY_SER)
     val strategy = new MyStrategy(Regression, MyVariance, s.maxDepth, 2, s.maxBins, Sort, Map[Int, Int](),
-      maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache)
+      maxMemoryInMB = s.maxMemoryInMB, useNodeIdCache = s.useNodeIdCache, subsamplingRate = s.bagging)
 
     val model: MyEnsembleModelNew[_] = if (s.iterations == 0) {
       s.initialModel match {
@@ -249,7 +249,7 @@ object Main {
   case class MalisSettings(learningRate:Double, subsampleProportion:Double, momentum:Double, treesPerIteration:Int)
   case class Subvolumes(train: Seq[String], test:Seq[String])
   case class RunSettings(name:String, numExecutors:Int, maxMemoryInMB:Int, data_root:String, save_to:String, /*localDir: String,*/
-                         subvolumes:Subvolumes, featureSubsetStrategy:String,
+                         subvolumes:Subvolumes, featureSubsetStrategy:String, bagging:Double,
                          /*impurity:MyImpurity,*/ maxDepth:Int, maxBins:Int, nBaseFeatures:Int, initialModel:InitialModel,
                          baseFeaturesAndOffsets:Seq[(Int, (Int, Int))], master:String, save_model_to:String,
                          iterations:Int, saveGradients:Boolean, testPartialModels:Seq[Int], testDepths:Seq[Int],
@@ -281,6 +281,7 @@ object Main {
       " testPartialModels = " + testPartialModels + "\n" +
       " testDepths = (IGNORED!) " + testDepths + "\n" +
       " useNodeIdCache = " + useNodeIdCache + "\n" +
+      " bagging = " + bagging + "\n" +
       " subsampleProportion = " + malisSettings.subsampleProportion + "\n" +
       " momentum = " + malisSettings.momentum
   }
@@ -354,6 +355,7 @@ object Main {
       },
       testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
+      bagging = m.getOrElse("bagging", "1").toDouble,
       malisSettings = MalisSettings(
         treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
         learningRate     = m.getOrElse("learningRate",     "1").toDouble,
