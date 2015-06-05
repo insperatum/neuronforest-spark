@@ -325,14 +325,14 @@ object Main {
       //localDir      = m.getOrElse("localDir",     "/tmp"),
       //subvolumes    = m.getOrElse("subvolumes",    "000,001,010,011,100,101,110,111").split(",").toArray,
       subvolumes    = Subvolumes(train_subvolumes, test_subvolumes),
-      featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "sqrt"),
+      featureSubsetStrategy = m.getOrElse("featureSubsetStrategy", "all"),
       //impurity      = MyImpurities.fromString(m.getOrElse("impurity", "variance")),
       maxDepth      = m.getOrElse("maxDepth",      "10").toInt,
       maxBins       = m.getOrElse("maxBins",       "10").toInt,
       nBaseFeatures = m.getOrElse("nBaseFeatures", "24").toInt,
       initialModel  = //InitialLoadedModel("/masters_models/2015-04-16 17-42-35"),
                       if(m.contains("loadModel")) InitialLoadedModel(m("loadModel"))
-                      else InitialTrainModel(m.getOrElse("initialTrees",  "3").toInt),
+                      else InitialTrainModel(m.getOrElse("initialTrees",  "1").toInt),
       //dimOffsets    = m.getOrElse("dimOffsets",    "0").split(",").map(_.toInt),
       //offsetMultiplier    = m.getOrElse("offsetMultiplier",    "1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8").split(",").map(_.toInt),
       baseFeaturesAndOffsets = m.getOrElse("features", defaultBaseFeaturesAndOffsets).split(";").flatMap{ s =>
@@ -355,7 +355,7 @@ object Main {
       },
       testDepths    = m.getOrElse("testDepths", "").split(",").filter(! _.isEmpty).map(_.toInt),
       useNodeIdCache = m.getOrElse("useNodeIdCache", "true").toBoolean,
-      bagging = m.getOrElse("bagging", "1").toDouble,
+      bagging = m.getOrElse("bagging", "0.1").toDouble,
       malisSettings = MalisSettings(
         treesPerIteration = m.getOrElse("treesPerIteration", "10").toInt,
         learningRate     = m.getOrElse("learningRate",     "1").toDouble,
