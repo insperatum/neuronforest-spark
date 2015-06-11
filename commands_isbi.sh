@@ -5,15 +5,18 @@ spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 start BIG36
 MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master BIG36 | tail -1`
 
 #download all data onto workers
-(ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | while read line; do
-	ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'source aws-credentials && aws s3 cp s3://neuronforest.sparkdata/isbi_data /mnt/isbi_data --recursive' &
-done
+(ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | (while read line; do
+	ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'source aws-credentials && aws s3 sync s3://neuronforest.sparkdata/isbi_data /mnt/isbi_data' & tasks="$tasks $!"; done; for t in $tasks; do wait $t; done);
 
 #Copy application over
 scp -i ~/luke.pem /home/luke/IdeaProjects/neuronforest-spark/out/artifacts/neuronforest-spark.jar root@$MASTER:
 
 #login
 spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 login BIG36
+
+#!!!!!! DO SOMETHING TO FIX THE /mnt2/spark thing !!!!!!
+#!!!!!! sbin/stop-all -> sbin/start-all !!!!!!
+#!!!!!! or start with correct instance type?? !!!!!!
 
 
 
@@ -63,7 +66,7 @@ if [ -z "$6" ]; then echo "Please give 6 arguments:"; echo "subvolumes_train, lo
 source ~/isbi/subvolumes.sh
 ~/isbi/clear.sh;
 dt=$(date '+%Y%m%d_%H%M%S');
-~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 loadModel=$2 dimOffsets=$3 maxBins=$4 featureSubsetStrategy=$5 testPartialModels=$6 iterations=0 learningRate=0 maxDepth=999 subsampleProportion=0 subvolumes_test=$SUBVOLUMES_TEST save_to=/mnt/isbi_predictions save_model_to=/mnt/isbi_models treesPerIteration=10 testDepths= useNodeIdCache=false momentum=0 offsetMultiplier=1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
+~/spark/bin/spark-submit --executor-memory 28G --driver-memory 120G --conf spark.shuffle.spill=false --conf spark.shuffle.memoryFraction=0.1 --conf spark.storage.memoryFraction=0.7 --master spark://`cat ~/spark-ec2/masters`:7077 --class Main ./neuronforest-spark.jar numExecutors=36 maxMemoryInMB=2500 data_root=/mnt/isbi_data localDir=/mnt/tmp master= subvolumes_train=$1 loadModel=$2 dimOffsets=$3 maxBins=$4 featureSubsetStrategy=$5 testPartialModels=$6 iterations=0 learningRate=0 maxDepth=999 subsampleProportion=0 subvolumes_test=$SUBVOLUMES_TEST save_to=/mnt/isbi_predictions save_model_to= treesPerIteration=0 testDepths= useNodeIdCache=false momentum=0 offsetMultiplier=1,1,1,1,1,1,2,2,2,2,2,2,4,4,4,4,4,4,8,8,8,8,8,8 > "/root/logs/$dt stdout.txt" 2> "/root/logs/$dt stderr.txt" &&
 ~/isbi/save.sh
 
 #save

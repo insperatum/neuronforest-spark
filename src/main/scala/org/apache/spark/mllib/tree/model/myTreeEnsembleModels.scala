@@ -19,12 +19,15 @@ package org.apache.spark.mllib.tree.model
 
 import com.github.fommil.netlib.BLAS.{getInstance => blas}
 import main.scala.org.apache.spark.mllib.tree.model.MyModel
+import org.apache.spark.SparkContext
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaRDD
-import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.mllib.linalg.{Vectors, Vector}
 import org.apache.spark.mllib.tree.DoubleTuple
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.EnsembleCombiningStrategy._
+import org.apache.spark.mllib.tree.impl.{TreePoint, MyTreePoint}
 import org.apache.spark.rdd.RDD
 
 import scala.collection.mutable
@@ -203,9 +206,103 @@ private[tree] sealed class MyTreeEnsembleModel(
 
 
 
+object MyTreeEnsembleModel {
+  def predictWithBroadcast[T <: MyModel](mBroadcast:Broadcast[MyEnsembleModelNew[T]], data:RDD[MyTreePoint]) = {
+    println("predictWithBroadcast")
+
+    data.map { point =>
+      val features = Array.tabulate[Double](point.data.nFeatures)(f => point.features(f))
+      (point, mBroadcast.value.predict(Vectors.dense(features)))
+    }
+  }
+
+  def predictWithBroadcasts[T <: MyModel](mBroadcasts:Array[Broadcast[T]], m:MyEnsembleModelNew[_],
+                                          data:RDD[MyTreePoint]) = {
+
+    val weight = (m.algo, m.combiningStrategy) match {
+      case (Regression, Sum) => m.treeWeights
+      case (Regression, Average) => m.treeWeights.map(_ / m.sumWeights)
+    }
+
+    println("predictWithBroadcasts")
+    def bar(i: Int) = {
+      val submodel = mBroadcasts(i)
+      data.map {
+        case point =>
+          val features = Array.tabulate[Double](point.data.nFeatures)(f => point.features(f))
+          submodel.value.predict(Vectors.dense(features)) * weight(i)
+      }
+    }
+    def sumSeqs(seq1:RDD[DoubleTuple], seq2:RDD[DoubleTuple]) = seq1.zip(seq2).map(x => x._1 + x._2)
+    val foo = (0 until mBroadcasts.length).map(bar).reduce(sumSeqs)
+    data.zip(foo)
+  }
+
+  /*
+  def predictSerial[T <: MyModel](m:MyEnsembleModelNew[T], data:RDD[MyTreePoint]) {
 
 
+    val weight = (m.algo, m.combiningStrategy) match {
+      case (Regression, Sum) => m.treeWeights
+      case (Regression, Average) => m.treeWeights.map(_ / m.sumWeights)
+    }
 
+    def bar(i: Int) = {
+      val submodel = m.elems(i)
+      data.map {
+        case point =>
+          val features = Array.tabulate[Double](point.data.nFeatures)(f => point.features(f))
+          submodel.predict(Vectors.dense(features)) * weight(i)
+      }
+    }
+
+    def sumSeqs(seq1:RDD[DoubleTuple], seq2:RDD[DoubleTuple]) = seq1.zip(seq2).map(x => x._1 + x._2)
+
+    val subseqs = (0 until m.elems.length).grouped(5).toSeq
+
+    println(" trees " + subseqs.head.map(_.toString).reduce(_ + ", " + _))
+    var foo = subseqs.head.map(bar).reduce(sumSeqs).cache()
+    foo.count()
+
+    for(sub <- subseqs.tail) {
+      println(" trees " + sub.map(_.toString).reduce(_ + ", " + _))
+      //val a = foo
+      foo = sumSeqs(foo, sub.map(bar).reduce(sumSeqs)).cache()
+      foo.count()
+      //a.unpersist()
+    }
+
+      /*val foos = for(is <- subseqs) yield {
+        println(" elems " + is.map(_.toString).reduce(_ + ", " + _))
+        val a = is.map(bar).reduce(sumSeqs).cache()
+        a.count()
+        a
+      }
+      val foo = foos.reduce(sumSeqs).cache()
+      foo.count()*/
+//      foos.foreach(_.unpersist())
+
+//    val foo = {
+//      val submodel = m.elems(0)
+//      val a = data.map {
+//        case point =>
+//          val features = Array.tabulate[Double](point.data.nFeatures)(f => point.features(f))
+//          submodel.predict(Vectors.dense(features))
+//      }
+//      a.count()
+//      a
+//    }
+
+//    val foo = (0 until m.elems.length) map { i =>
+//      println(" element " + i)
+//      bar(i)
+//    } reduce sumSeqs
+
+    val output = data.zip(foo)
+//    println("done")
+    (output, () => {/*foo.unpersist()*/} )
+  }*/
+}
 
 class MyEnsembleModelNew[T <: MyModel](
                                      val algo: Algo,
@@ -221,7 +318,7 @@ class MyEnsembleModelNew[T <: MyModel](
   def getPartialModels:Seq[MyEnsembleModelNew[T]] = (1 to nElems).map(n =>
     new MyEnsembleModelNew(algo, elems.take(n), treeWeights.take(n), combiningStrategy))
 
-  def getPartialSegments(testPartialModels:Seq[Int]):Seq[MyEnsembleModelNew[_]] = {
+  def getPartialSegments(testPartialModels:Seq[Int]):Seq[MyEnsembleModelNew[_ <: MyModel]] = {
     if(testPartialModels.isEmpty) Seq() else
     (0 +: testPartialModels.init).zip(testPartialModels).map{case (from, until) =>
       new MyEnsembleModelNew(algo, elems.drop(from).take(until-from), treeWeights.drop(from).take(until-from), combiningStrategy)

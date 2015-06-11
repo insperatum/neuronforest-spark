@@ -85,8 +85,9 @@ class MyGradientBoostedTrees(private val boostingStrategy: MyBoostingStrategy)
          subsample_proportion: Double,
           featureSubsetStrategy:String,
           save_loss_to:String,
-           save_gradients:Boolean) = {
-    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, subsample_proportion, featureSubsetStrategy, save_loss_to, save_gradients)
+           save_gradients:Boolean,
+           initialSeed:Int) = {
+    MyGradientBoostedTrees.boost(input, boostingStrategy, numFeatures, numExamples, splits, bins, subsample_proportion, featureSubsetStrategy, save_loss_to, save_gradients, initialSeed)
   }
 
 
@@ -141,7 +142,8 @@ object MyGradientBoostedTrees extends Logging {
       subsample_proportion:Double,
       featureSubsetStrategy:String,
       save_loss_to:String,
-      save_gradients:Boolean) = {
+      save_gradients:Boolean,
+      initialSeed:Int) = {
 
     val timer = new TimeTracker()
     timer.start("total")
@@ -186,8 +188,9 @@ object MyGradientBoostedTrees extends Logging {
 //    val firstTreeModel = new MyRandomForest(forestStrategy, treesPerIteration, featureSubsetStrategy, 1).
 //      trainFromMyTreePoints(data, numFeatures, numExamples, splits, bins)
     val firstTreeModel = initialModel match {
-      case m:InitialTrainModel => MyRandomForest.trainRegressorFromTreePoints(
-        data, forestStrategy, m.initialTrees, featureSubsetStrategy, 1, numFeatures, numExamples, splits, bins)
+      case m:InitialTrainModel => /*MyRandomForest.trainSerial(
+        data, forestStrategy, m.initialTrees, featureSubsetStrategy, initialSeed, numFeatures, numExamples, splits, bins)*/
+        ??? //todo: reuse code for initialModel in Main.scala
       case m:InitialLoadedModel =>
         m.load()
     }

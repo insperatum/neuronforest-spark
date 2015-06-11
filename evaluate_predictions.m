@@ -1,6 +1,6 @@
 function evaluate_predictions(files, dims, description)
-    initial_thresholds = -0.5:0.4:1.5;
-     min_step = 0.002;
+    initial_thresholds = 0.5:0.05:1.2;
+     min_step = 0.001;
 %    min_step = 0.1;
     
     f = fopen([files{1} '/../errors_new.txt'], 'w');
@@ -95,6 +95,7 @@ evaluate_thresholds(files, dims, thresholds, randOrPixel, min_step)
     n_examples = nan(length(files), 1);
     %[err, tp, fp, pos, neg, p_sqerr] = get_stats(files{1}, thresholds, dims, randOrPixel);
     parfor i=1:length(files)
+    %for i=1:length(files)
         [err_, tp_, fp_, pos_, neg_, p_sqerr_, n_examples_] = get_stats(files{i}, thresholds, dims, randOrPixel);
         err(i,:) = err_;
         tp(i,:) = tp_;
@@ -103,7 +104,7 @@ evaluate_thresholds(files, dims, thresholds, randOrPixel, min_step)
         neg(i)= neg_;
         p_sqerr(i) = p_sqerr_;
         n_examples(i) = n_examples_;
-%         fprintf(':O');
+        %fprintf(':O');
     end
     
     tp = sum(bsxfun(@times, tp, n_examples));
@@ -144,7 +145,7 @@ end
 function [err, tp, fp, pos, neg, p_sqerr, n_examples] = get_stats(file, thresholds, dims, randOrPixel)
     
     [ affTrue, affEst, dimensions ] = load_affs( file, dims );
-    n_examples = numel(affEst)/3;
+    n_examples = numel(affEst)/2;
 %     load([file '/gradients.txt'])
 %     [~, idxs_idxs] = sort(sum(gradients(:,2:4), 2));
 %     idxs = gradients(idxs_idxs, 1);
@@ -218,9 +219,13 @@ function [r_err, r_tp, r_fp, r_pos, r_neg] = ...
         get_rand_stats_for_threshold(compTrue, affEst, threshold)
 
     if(~ all(affEst(:)<=threshold) && ~ all(affEst(:)>threshold))
-        compEst = flip_aff(connectedComponents(flip_aff(affEst)>threshold));
+        nHood = -[1 0 0; 0 1 0];
+        sz = size(affEst);
+        affEst = reshape(affEst,[sz(1) sz(2) 1 sz(end)]);
+ 
+        compEst = flip_aff(connectedComponents(flip_aff(affEst)>threshold, nHood));
 
-        watershed = markerWatershed(affEst, -eye(3), compEst);
+        watershed = markerWatershed(affEst, nHood, compEst);
 
         [ri, stats] = randIndex(compTrue, watershed);
         r_err = 1-ri;

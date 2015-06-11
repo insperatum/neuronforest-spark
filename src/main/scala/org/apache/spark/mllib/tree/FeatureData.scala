@@ -50,7 +50,7 @@ class RawFeatureData(val id:String, file:String, val nFeatures:Int) extends Feat
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
                         val indexer: Indexer,
-                        baseFeaturesAndOffsets: Seq[(Int, (Int, Int))]) extends Serializable {
+                        featureBaseFeaturesAndOffsets: Seq[(Int, (Int, Int))]) extends Serializable {
 
 
   import indexer.outerSteps
@@ -60,7 +60,7 @@ class BinnedFeatureData(featureData:RawFeatureData,
   val arr = featureData.arr
   val binnedBaseFeatures = Array.ofDim[Int](arr.length)
   val nBaseFeatures = featureData.nFeatures
-  val nFeatures = baseFeaturesAndOffsets.length
+  val nFeatures = featureBaseFeaturesAndOffsets.length
 
   val nExamples = featureData.nExamples
 //  val featureOffsets = offsets.flatMap(o => {
@@ -69,8 +69,8 @@ class BinnedFeatureData(featureData:RawFeatureData,
 //    offsetMultiplier.map(_ * idxOffset)
 //  })
 
-  val baseFeatures = baseFeaturesAndOffsets.map(_._1).toArray
-  val offsets = baseFeaturesAndOffsets.map { case (_, (o1, o2)) =>
+  val featureBaseFeatures = featureBaseFeaturesAndOffsets.map(_._1).toArray
+  val offsets = featureBaseFeaturesAndOffsets.map { case (_, (o1, o2)) =>
     o1 * outerSteps._1 + o2 * outerSteps._2
   }.toArray
 
@@ -86,6 +86,6 @@ class BinnedFeatureData(featureData:RawFeatureData,
     i += 1
   }
 
-  def getValue(i:Int, f:Int) = featureData.getValue(i + offsets(f), baseFeatures(f))
-  def getBin(i:Int, f:Int) = binnedBaseFeatures((i + offsets(f)) * nBaseFeatures + baseFeatures(f))
+  def getValue(i:Int, f:Int) = featureData.getValue(i + offsets(f), featureBaseFeatures(f))
+  def getBin(i:Int, f:Int) = binnedBaseFeatures((i + offsets(f)) * nBaseFeatures + featureBaseFeatures(f))
 }

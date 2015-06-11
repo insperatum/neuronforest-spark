@@ -278,11 +278,28 @@ object NeuronUtils {
     /*val fwlabels = new FileWriter(path + "/labels.txt", false)
     val fwpredictions = new FileWriter(path + "/predictions.txt", false)
     labelsAndPredictions.foreach{ case (label, prediction) => {
-      fwlabels.write(label._1 + " " + label._2 + " " + label._3 + "\n")
-      fwpredictions.write(prediction._1 + " " + prediction._2 + " " + prediction._3 + "\n")
+      fwlabels.write(label._1 + " " + label._2 + "\n")
+      fwpredictions.write(prediction._1 + " " + prediction._2 + "\n")
     }}
     fwlabels.close()
     fwpredictions.close()*/
+
+    val fclabels = new RandomAccessFile(path + "/labels.raw", "rw").getChannel //todo can use save3d
+    val fcpredictions = new RandomAccessFile(path + "/predictions.raw", "rw").getChannel
+    val byteBuffer = ByteBuffer.allocate(4 * 2) //must be multiple of 4 for floats
+    val floatBuffer =  byteBuffer.asFloatBuffer()
+    labelsAndPredictionsSeq.foreach{ case (label, prediction) =>
+      Seq(label._1, label._2).foreach(d => floatBuffer.put(d.toFloat))
+      fclabels.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+      Seq(prediction._1, prediction._2).foreach(d => floatBuffer.put(d.toFloat))
+      fcpredictions.write(byteBuffer)
+      byteBuffer.rewind()
+      floatBuffer.clear()
+    }
+    fclabels.close()
+    fcpredictions.close()
 
 
     println("\tComplete")
