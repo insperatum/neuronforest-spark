@@ -50,8 +50,7 @@ class RawFeatureData(val id:String, file:String, val nFeatures:Int) extends Feat
 class BinnedFeatureData(featureData:RawFeatureData,
                         bins:Array[Array[Bin]],
                         val indexer: Indexer,
-                        offsets:Seq[(Int, Int, Int)],
-                        offsetMultiplier:Array[Int]) extends Serializable {
+                        featureBaseFeaturesAndOffsets: Seq[(Int, (Int, Int, Int))]) extends Serializable {
 
 
   import indexer.outerSteps
@@ -61,13 +60,20 @@ class BinnedFeatureData(featureData:RawFeatureData,
   val arr = featureData.arr
   val binnedBaseFeatures = Array.ofDim[Int](arr.length)
   val nBaseFeatures = featureData.nFeatures
-  val nFeatures = nBaseFeatures * offsets.length
+  val nFeatures = featureBaseFeaturesAndOffsets.length
+
   val nExamples = featureData.nExamples
-  val featureOffsets = offsets.flatMap(o => {
-    val idxOffset = o._1 * outerSteps._1 + o._2 * outerSteps._2 + o._3 * outerSteps._3
-    //Array.fill(nBaseFeatures){idxOffset}
-    offsetMultiplier.map(_ * idxOffset)
-  })
+//  val featureOffsets = offsets.flatMap(o => {
+//    val idxOffset = o._1 * outerSteps._1 + o._2 * outerSteps._2
+//    //Array.fill(nBaseFeatures){idxOffset}
+//    offsetMultiplier.map(_ * idxOffset)
+//  })
+
+  val featureBaseFeatures = featureBaseFeaturesAndOffsets.map(_._1).toArray
+  val offsets = featureBaseFeaturesAndOffsets.map { case (_, (o1, o2, o3)) =>
+    o1 * outerSteps._1 + o2 * outerSteps._2 + o3 * outerSteps._3
+  }.toArray
+
 
   var i = 0
   while(i < nExamples) {
@@ -80,6 +86,6 @@ class BinnedFeatureData(featureData:RawFeatureData,
     i += 1
   }
 
-  def getValue(i:Int, f:Int) = featureData.getValue(i + featureOffsets(f), f % nBaseFeatures)
-  def getBin(i:Int, f:Int) = binnedBaseFeatures((i + featureOffsets(f)) * nBaseFeatures + (f % nBaseFeatures))
+  def getValue(i:Int, f:Int) = featureData.getValue(i + offsets(f), featureBaseFeatures(f))
+  def getBin(i:Int, f:Int) = binnedBaseFeatures((i + offsets(f)) * nBaseFeatures + featureBaseFeatures(f))
 }

@@ -163,14 +163,15 @@ private class MyRandomForest (
                           splits:Array[Array[Split]], bins:Array[Array[Bin]]):MyRandomForestModelNew = {
     val (subsample, withReplacement) = {
       // TODO: Have a stricter check for RF in the strategy
-      val isRandomForest = numTrees > 1
-      if (isRandomForest) {
+      //val isRandomForest = numTrees > 1
+      /*if (isRandomForest) {
         (1.0, true)
-      } else {
+      } else {*/
         (strategy.subsamplingRate, false)
-      }
+      //}
     }
 
+    println("Training an RF with " + numTrees + " trees, subsampling rate " + subsample + ", seed " + seed)
     val (baggedInput, unpersistInput)
       = cached(BaggedPoint.convertToBaggedRDD(treeInput, subsample, numTrees, withReplacement, seed))
 
@@ -302,10 +303,13 @@ object MyRandomForest extends Serializable with Logging {
                   numExamples: Long,
                   splits: Array[Array[Split]],
                   bins: Array[Array[Bin]]): MyRandomForestModelNew = {
+    val rng = new scala.util.Random()
+    rng.setSeed(seed)
+
     val subforests = Array.tabulate(numTrees) { i =>
       val t = System.currentTimeMillis()
       println("\n\nTraining tree " + i + "\n----------------")
-      val subforest = MyRandomForest.trainRegressorFromTreePoints(input, strategy, 1, featureSubsetStrategy, seed,
+      val subforest = MyRandomForest.trainRegressorFromTreePoints(input, strategy, 1, featureSubsetStrategy, rng.nextInt,
         numFeatures, numExamples, splits, bins)
       println("Tree took " + ((System.currentTimeMillis() - t)/6000).toDouble/10 + " minutes")
       subforest

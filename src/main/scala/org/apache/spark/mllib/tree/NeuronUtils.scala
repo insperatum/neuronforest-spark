@@ -50,15 +50,15 @@ object NeuronUtils {
     (newRDD, _ => unpersist())
   }
 
-  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, numOffsets:Int) = {
+  def getSplitsAndBins(subvolumes: Seq[String], nBaseFeatures:Int, data_root:String, maxBins:Int, baseFeaturesAndOffsets:Seq[(Int, (Int, Int, Int))]) = {
     println("getting splits and bins")
     val features_file_1 = data_root + "/" + subvolumes(0) + "/features.raw"
     val features_data_1 = new RawFeatureData(subvolumes(0), features_file_1, nBaseFeatures)
-    getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, nBaseFeatures, numOffsets)//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
+    getSplitsAndBinsFromFeaturess(features_data_1.toVectors.take(100000).toArray, maxBins, baseFeaturesAndOffsets.map(_._1))//todo SORT THIS VECTOR ITERATOR ARRAY NONSENSE
   }
 
   def loadData(sc: SparkContext, numExecutors:Int, subvolumes: Seq[String], nBaseFeatures: Int, data_root: String,
-               maxBins:Int, offsets:Seq[(Int, Int, Int)], offsetMultiplier:Array[Int], proportion: Double,
+               maxBins:Int, baseFeaturesAndOffsets:Seq[(Int, (Int, Int, Int))], proportion: Double,
                bins:Array[Array[Bin]], fromFront: Boolean) = {
     val chunked = subvolumes.grouped((subvolumes.size + numExecutors - 1) / numExecutors).toSeq
 
@@ -78,7 +78,7 @@ object NeuronUtils {
 
         val indexer = new Indexer(dimensions.outerDimensions, dimensions.min_idx, dimensions.max_idx)
 
-        val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, offsets, offsetMultiplier)
+        val binnedFeatureData = new BinnedFeatureData(rawData, bins, indexer, baseFeaturesAndOffsets)
         targets.zipWithIndex.map { case (ts, idx) =>
           val y = DoubleTuple(ts)
           //val seg = ts(2).toInt
@@ -148,15 +148,31 @@ object NeuronUtils {
   }
 
 
-  private def getSplitsAndBinsFromFeaturess(featuress:Array[org.apache.spark.mllib.linalg.Vector], maxBins:Int, nBaseFeatures:Int, nOffsets:Int):
+  private def getSplitsAndBinsFromFeaturess(featuress:Array[org.apache.spark.mllib.linalg.Vector], maxBins:Int, featureBaseFeatures:Seq[Int]):
   (Array[Array[Split]], Array[Array[Bin]]) = {
     println("getSplitsAndBins")
     val strategy = new MyStrategy(Classification, MyVariance, 0, 0, maxBins, Sort, Map[Int, Int]())
     val fakemetadata = MyDecisionTreeMetadata.buildMetadata(featuress(0).size, featuress.size, strategy, 50, "sqrt")
     val (rawFeatureSplits, rawFeatureBins) = MyDecisionTree.findSplitsBins(featuress, fakemetadata)
 
-    val rawFeatureSplitsAndBins = rawFeatureSplits zip rawFeatureBins
-    val featureSplitsAndBins = for(i <- (0 until nOffsets).toArray; sb <- rawFeatureSplitsAndBins) yield {
+    //val rawFeatureSplitsAndBins = (rawFeatureSplits zip rawFeatureBins).toIndexedSeq
+    val featureSplitsAndBins = for((f, i) <- featureBaseFeatures.zipWithIndex.toArray) yield {
+      val rawSplits = rawFeatureSplits(f)
+      val rawBins = rawFeatureBins(f)
+
+      val allRawSplits = rawSplits ++ Seq(rawBins.head.lowSplit, rawBins.last.highSplit)
+      val allRawSplitToSplit = allRawSplits.map(s => s ->
+        s.copy(feature = i)
+      ).toMap
+
+      val splits = rawSplits.map(allRawSplitToSplit(_))
+      val bins = rawBins.map(b =>
+        b.copy(lowSplit = allRawSplitToSplit(b.lowSplit), highSplit = allRawSplitToSplit(b.highSplit))
+      )
+
+      (splits, bins)
+    }
+    /*val featureSplitsAndBins = for(i <- (0 until nOffsets).toArray; sb <- rawFeatureSplitsAndBins) yield {
       val rawSplits = sb._1
       val rawBins = sb._2
 
@@ -171,7 +187,7 @@ object NeuronUtils {
       )
 
       (splits, bins)
-    }
+    }*/
 
     val featureSplits = featureSplitsAndBins.map(_._1)
     val featureBins = featureSplitsAndBins.map(_._2)
