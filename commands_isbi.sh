@@ -1,8 +1,18 @@
+NAME=BIG36
+
 #Launch
-spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 start BIG36
+spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 --instance-type=r3.xlarge start $NAME
 
 #MASTER
-MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master BIG36 | tail -1`
+MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master $NAME | tail -1`
+
+#####FOR THE FIRST TIME#####
+scp -i ~/luke.pem /home/luke/aws-credentials root@$MASTER: && ssh -i ~/luke.pem root@$MASTER '~/spark-ec2/copy-dir aws-credentials'
+
+(echo $MASTER && ssh -n -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves') | (tasks=""; while read line; do ssh -n -o StrictHostKeyChecking=no -i ~/luke.pem -t -t root@$line 'curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip" && unzip awscli-bundle.zip && sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws' & tasks="$tasks $!"; done; for t in $tasks; do wait $t; done)
+
+ssh -i ~/luke.pem root@$MASTER 'git clone http://github.com/insperatum/scripts.git'
+############################
 
 #download *ALL* data onto workers (for isbi)
 (ssh -i ~/luke.pem root@$MASTER 'cat /root/spark-ec2/slaves' && echo $MASTER) | (while read line; do
@@ -12,7 +22,7 @@ MASTER=`spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 get-master BIG36 | ta
 scp -i ~/luke.pem /home/luke/IdeaProjects/neuronforest-spark/out/artifacts/neuronforest-spark.jar root@$MASTER:
 
 #login
-spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 login BIG36
+spark-ec2 -k luke -i ~/luke.pem --region=eu-west-1 login $NAME
 
 #!!!!!! DO SOMETHING TO FIX THE /mnt2/spark thing !!!!!!
 #!!!!!! sbin/stop-all -> sbin/start-all !!!!!!
